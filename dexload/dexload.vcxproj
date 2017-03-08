@@ -190,6 +190,7 @@
     <ClInclude Include="Art.h" />
     <ClInclude Include="Davlik.h" />
     <ClInclude Include="dexload.h" />
+    <ClInclude Include="dvmdata.h" />
     <ClInclude Include="Hook.h" />
     <ClInclude Include="hook\arm\godin_type.h" />
     <ClInclude Include="hook\arm\hookinfo.h" />

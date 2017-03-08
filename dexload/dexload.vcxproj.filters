@@ -157,6 +157,9 @@
     <ClInclude Include="Art.h">
       <Filter>header</Filter>
     </ClInclude>
+    <ClInclude Include="dvmdata.h">
+      <Filter>header</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

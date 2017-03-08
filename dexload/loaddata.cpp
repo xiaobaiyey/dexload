@@ -12,11 +12,14 @@
 #include <string>
 #include <cstdlib>
 #include "dexload.h"
-#include <asm-generic/fcntl.h>
+#include "Davlik.h"
 char* PackageFilePath;
 char* PackageNames;
 
-char* oatfilePath;
+char* NativeLibDir;
+//for dvm
+static Davlik* dvm_davlik;
+
 
 loaddata::loaddata()
 {
@@ -45,7 +48,7 @@ void loaddata::attachContextBaseContext(JNIEnv* env, jobject obj, jobject ctx)
 	jmethodID getAbsolutePath = env->GetMethodID(FileClass, "getAbsolutePath", "()Ljava/lang/String;");
 	jstring data_file_dir = static_cast<jstring>(env->CallObjectMethod(File_obj, getAbsolutePath));
 	const char* cdata_file_dir = Util::jstringTostring(env, data_file_dir);
-	//释放
+	//release
 	env->DeleteLocalRef(data_file_dir);
 	env->DeleteLocalRef(File_obj);
 	env->DeleteLocalRef(FileClass);
@@ -56,7 +59,7 @@ void loaddata::attachContextBaseContext(JNIEnv* env, jobject obj, jobject ctx)
 	jclass ApplicationInfoClass = env->GetObjectClass(ApplicationInfo_obj);
 	jfieldID nativeLibraryDir_fied = env->GetFieldID(ApplicationInfoClass, "nativeLibraryDir", "Ljava/lang/String;");
 	jstring nativeLibraryDir = static_cast<jstring>(env->GetObjectField(ApplicationInfo_obj, nativeLibraryDir_fied));
-	const char* cnativeLibraryDir = Util::jstringTostring(env, nativeLibraryDir);
+	NativeLibDir = Util::jstringTostring(env, nativeLibraryDir);
 	//释放
 	env->DeleteLocalRef(nativeLibraryDir);
 	env->DeleteLocalRef(ApplicationInfoClass);
@@ -87,6 +90,7 @@ void loaddata::attachContextBaseContext(JNIEnv* env, jobject obj, jobject ctx)
 	//free(&codePath);
 	if (dexnums <= 0)
 	{
+		Messageprint::printinfo("loaddex", "");
 		return;
 	}
 	//加载dex 
@@ -98,17 +102,25 @@ void loaddata::attachContextBaseContext(JNIEnv* env, jobject obj, jobject ctx)
 	mCookie = env->GetFieldID(DexFile, "mCookie", cookietype.c_str());
 
 	MethodSign method_sign = Util::getMehodSign(env, "dalvik.system.DexFile", "loadDex");
-	//本打算 拿到openDexFileNative 方法 但是发现4.0的机器方法名并不是openDexFileNative  so 改为openDexFile
-	jmethodID openDexFileNative = env->GetStaticMethodID(DexFile, "loadDex", method_sign.sign.c_str());
+	//get loadDex file Methodid 
+	jmethodID openDexFileNative = nullptr;
 	//Messageprint::printinfo(__FUNCTION__, "over here:%d", __LINE__);
+	//for dvm
+	if (isArt)
+	{
+		openDexFileNative = env->GetStaticMethodID(DexFile, "loadDex", method_sign.sign.c_str());
+	}
+	else
+	{
+		dvm_davlik = Davlik::initdvm();
+	}
 	loaddex(env, openDexFileNative, cdata_file_dir, method_sign.argSize, dexnums, cookietype.c_str(), classLoader);
 }
 
-//导出加密的dex文件，可能有多个dex
 /*
 *env
-*ctx Context
-*path /data/data/packageName/files/code文件夹
+*ctx Context Application Context
+*path /data/data/packageName/files/code dir
 */
 int loaddata::ExtractFile(JNIEnv* env, jobject ctx, const char* path)
 {
@@ -147,10 +159,10 @@ int loaddata::ExtractFile(JNIEnv* env, jobject ctx, const char* path)
 					file = fopen(filePath, "wb");
 					//       int bufferSize = AAsset_getLength(asset); 
 					//       LOGI("buffersize is %d",bufferSize);
-					buffer = malloc(1024);
+					buffer = malloc(4096);
 					while (true)
 					{
-						numBytesRead = AAsset_read(asset, buffer, 1024);
+						numBytesRead = AAsset_read(asset, buffer, 4096);
 						if (numBytesRead <= 0)
 							break;
 						fwrite(buffer, numBytesRead, 1, file);
@@ -199,49 +211,6 @@ int loaddata::ExtractFile(JNIEnv* env, jobject ctx, const char* path)
 //------------------------------hook----------------------------------start
 static bool stophook = false;
 static int testoatfd = 0;
-ssize_t (*oldread)(int fd, void* dest, size_t request);
-ssize_t myread(int fd, void* dest, size_t request)
-{
-	if (fd==testoatfd&&request==4)
-	{
-		memcpy(dest, "dex\n", 4u);
-		return  4;
-	}
-	return  oldread(fd, dest, request);
-}
-
-static int (*oldopen)(const char* pathname, int flags, ...);
-static int myopen(const char* pathname, int flags, ...)
-{
-	//正常方法
-	mode_t mode = 0;
-	if ((flags & O_CREAT) != 0)
-	{
-		va_list args;
-		va_start(args, flags);
-		mode = static_cast<mode_t>(va_arg(args, int));
-		va_end(args);
-	}
-	//对dexfd 进行判断
-
-	if (strcmp(pathname,"/data/user/0/com.xiaobai.loaddextest/files/optdir/encrypt0.so")==0)
-	{
-		testoatfd= oldopen(pathname, flags, mode);
-		Messageprint::printinfo("loaddex", "open:%s fd:%d", pathname, testoatfd);
-		return testoatfd;
-	}
-	
-	
-
-	return  oldopen(pathname, flags, mode);
-}
-
-static void hookSomeTest()
-{
-	/*void* arthandle = dlopen("libart.so", 0);
-	Hook::hookMethod(arthandle, "open", (void*)myopen, (void**)&oldopen);
-	Hook::hookAllRegistered();*/
-}
 
 //------------------------------hook------------------------------------end
 //此处开始加载dex 参数比较多
@@ -253,11 +222,9 @@ static void hookSomeTest()
  *cooketype 决定调用那个方法 
  *classLoader Application.getClassLoader();
  */
-void loaddata::loaddex(JNIEnv* env, jmethodID openDexFileNative, const char* data_filePath, int argSize, int dexnums, const char* cooketype, jobject/*for android 7.0*/ classLoader)
+void loaddata::loaddex(JNIEnv* env, jmethodID loadDex, const char* data_filePath, int argSize, int dexnums, const char* cooketype, jobject/*for android 7.0*/ classLoader)
 {
-	//2017年3月6日11:10:22第一次优化
-
-	hookSomeTest();
+	//2017年3月6日11:10:22 fix
 	// for android 7.0  argsize=5
 	jclass DexFile = env->FindClass("dalvik/system/DexFile");
 	char* coptdir = new char[256];
@@ -271,9 +238,7 @@ void loaddata::loaddex(JNIEnv* env, jmethodID openDexFileNative, const char* dat
 	}
 	//释放内存
 	//delete[] coptdir;
-	//根据参数进行加载 针对7.0系统 没机器没测试
-	//start hook open mmap read witre函数 假设已经进行hook 了
-	hookSomeTest();
+
 	stophook = false;
 	//针对7.0 
 	if (argSize == 5)
@@ -287,35 +252,32 @@ void loaddata::loaddex(JNIEnv* env, jmethodID openDexFileNative, const char* dat
 			memset(copt_string, 0, 256);
 			memset(codePath, 0, 256);
 			sprintf(codePath, "%s/%s/%s%d.%s", data_filePath, "code", "encrypt", (i), "dex");
-			sprintf(copt_string, "%s/%s%d.%s", coptdir, "encrypt", (i), "so");
+			sprintf(copt_string, "%s/%s%d.%s", coptdir, "lib", (i), "so");
 			jstring oufile = env->NewStringUTF(copt_string);
 			jstring infile = env->NewStringUTF(codePath);
 			//oat 优化
 			if (makedex2oat(codePath, copt_string))
 			{
-				//采用腾讯方案 直接加载oat文件其他参数 null
-				//loadDex(String sourcePathName, String outputPathName,int flags, ClassLoader loader, DexPathList.Element[] elements) 返回DexFile 对象 这样应该快一点
-				jobject dexfileobj = env->CallStaticObjectMethod(DexFile, openDexFileNative, infile, oufile, nullptr, classLoader, nullptr);
-				makeDexElements(env, classLoader, dexfileobj, 0, 0, nullptr);
+				//loadDex(String sourcePathName, String outputPathName,int flags, ClassLoader loader, DexPathList.Element[] elements) and get DexFile Object
+				jobject dexfileobj = env->CallStaticObjectMethod(DexFile, loadDex, infile, oufile, nullptr, classLoader, nullptr);
+				makeDexElements(env, classLoader, dexfileobj);
 			}
 			else
 			{
-				Messageprint::printerror("makedex2oat", "make fail");
+				Messageprint::printerror("dex2oat", "make fail");
 			}
-
-
-			//释放优化
+			//release
 			env->DeleteLocalRef(oufile);
-
 			delete[] codePath;
 			delete[] copt_string;
 		}
 	}
-	//7.0 以下 参数为3个
+	//for android 4 -6
 	else if (argSize == 3)
-	{ //针对下4.4以下的系统 其实是可以采用byte[]方式加载 但是为了方便 直接采用“落地”方式加载
+	{
 		if (strcmp(cooketype, "I") == 0)
 		{
+			// art or dvm android 4.4 have art 
 			for (int i = 0; i < dexnums; ++i)
 			{
 				char* codePath = new char[256];
@@ -324,23 +286,59 @@ void loaddata::loaddex(JNIEnv* env, jmethodID openDexFileNative, const char* dat
 				memset(codePath, 0, 256);
 				// dex 文件路径 data/data/packageName/files/code/encrypt.x.dex;
 				sprintf(codePath, "%s/%s/%s%d.%s", data_filePath, "code", "encrypt", (i), "dex");
-				sprintf(copt_string, "%s/%s%d.%s", coptdir, "encrypt", (i), "dex");
-				jstring oufile = env->NewStringUTF(copt_string);
-				jstring infile = env->NewStringUTF(codePath);
-				//加载dex 并拿到cookie值
-				jint cookies = env->CallStaticIntMethod(DexFile, openDexFileNative, infile, oufile, 0);
-				jobject dexfile = Util::newFile(env, codePath);
-				makeDexElements(env, classLoader, nullptr, cookies, 0, nullptr);
-				//释放优化
-				env->DeleteLocalRef(oufile);
-				env->DeleteLocalRef(infile);
-				env->DeleteLocalRef(dexfile);
+				sprintf(copt_string, "%s/%s%d.%s", coptdir, "lib", (i), "so");
+				//for art
+				if (isArt)
+				{
+					jstring oufile = env->NewStringUTF(copt_string);
+					jstring infile = env->NewStringUTF(codePath);
+					//加载dex 并拿到cookie值
+					if (makedex2oat(codePath, copt_string))
+					{
+						jobject dexfileobj = env->CallStaticObjectMethod(DexFile, loadDex, infile, oufile, 0);
+						makeDexElements(env, classLoader, dexfileobj);
+					}
+					else
+					{
+						Messageprint::printerror("makedex2oat", "make fail");
+					}
+					//释放优化
+					env->DeleteLocalRef(infile);
+					env->DeleteLocalRef(oufile);
+					env->DeleteLocalRef(oufile);
+					env->DeleteLocalRef(infile);
+				}
+				//for dvm
+				else
+				{
+					if (dvm_davlik->initOk)
+					{
+						jint mcookie;
+
+						if (dvm_davlik->loaddex(codePath, mcookie))
+						{
+							jobject dexfileobj = makeDexFileObject(env, mcookie, data_filePath);
+							makeDexElements(env, classLoader, dexfileobj);
+						}
+						//load fail
+						else
+						{
+							Messageprint::printinfo("loaddex", "load fail");
+						}
+					}
+					//init fail
+					else
+					{
+						Messageprint::printerror("loaddex", "init dvm fail");
+					}
+				}
 				delete[] codePath;
 				delete[] copt_string;
 			}
 		}
 		else if (strcmp(cooketype, "J") == 0)
 		{
+			//only art
 			for (int i = 0; i < dexnums; ++i)
 			{
 				char* codePath = new char[256];
@@ -349,22 +347,30 @@ void loaddata::loaddex(JNIEnv* env, jmethodID openDexFileNative, const char* dat
 				memset(codePath, 0, 256);
 				// dex file path  data/data/packageName/files/code/encrypt.x.dex;
 				sprintf(codePath, "%s/%s/%s%d.%s", data_filePath, "code", "encrypt", (i), "dex");
-				sprintf(copt_string, "%s/%s%d.%s", coptdir, "encrypt", (i), "dex");
+				sprintf(copt_string, "%s/%s%d.%s", coptdir, "lib", (i), "so");
 				jstring oufile = env->NewStringUTF(copt_string);
 				jstring infile = env->NewStringUTF(codePath);
+				//dex2oat
+				if (makedex2oat(codePath, copt_string))
+				{
+					jobject dexfileobj = env->CallStaticObjectMethod(DexFile, loadDex, infile, oufile, 0);
+					makeDexElements(env, classLoader, dexfileobj);
+				}
+				else
+				{
+					Messageprint::printerror("makedex2oat", "make fail");
+				}
 
-				//start load dexfile and get retrun value
-				jlong cookies = env->CallStaticLongMethod(DexFile, openDexFileNative, infile, oufile, 0);
-				jobject dexfile = Util::newFile(env, codePath);
-				makeDexElements(env, classLoader, dexfile, 0, cookies, nullptr);
 				//release
+
 				env->DeleteLocalRef(oufile);
 				env->DeleteLocalRef(infile);
-				env->DeleteLocalRef(dexfile);
+
 				delete[] codePath;
 				delete[] copt_string;
 			}
 		}
+		//only art
 		else if (strcmp(cooketype, "Ljava/lang/Object;") == 0)
 		{
 			for (int i = 0; i < dexnums; ++i)
@@ -375,34 +381,21 @@ void loaddata::loaddex(JNIEnv* env, jmethodID openDexFileNative, const char* dat
 				memset(codePath, 0, 256);
 				// dex file path data/data/packageName/files/code/encrypt.x.dex;
 				sprintf(codePath, "%s/%s/%s%d.%s", data_filePath, "code", "encrypt", (i), "dex");
-				sprintf(copt_string, "%s/%s%d.%s", coptdir, "encrypt", (i), "so");
+				sprintf(copt_string, "%s/%s%d.%s", coptdir, "lib", (i), "so");
 				jstring oufile = env->NewStringUTF(copt_string);
-				jstring infile=env->NewStringUTF(codePath);
-				if (isArt)
+				jstring infile = env->NewStringUTF(codePath);
+				//dex2oat
+				if (makedex2oat(codePath, copt_string))
 				{
-					//dex2oat
-					if (makedex2oat(codePath, copt_string))
-					{
-						jobject dexFile = env->CallStaticObjectMethod(DexFile, openDexFileNative, infile, oufile, 0);
-						makeDexElements(env, classLoader, dexFile, 0, 0, nullptr);
-					}
-					else
-					{
-						Messageprint::printerror("makedex2oat", "make fail");
-					}
+					jobject dexFile = env->CallStaticObjectMethod(DexFile, loadDex, infile, oufile, 0);
+					makeDexElements(env, classLoader, dexFile);
 				}
 				else
 				{
-					jstring infile = env->NewStringUTF(codePath);
-					//start load dexfile and get retrun value
-					jobject cookies = env->CallStaticObjectMethod(DexFile, openDexFileNative, infile, oufile, 0);
-					jobject dexfile = Util::newFile(env, codePath);
-					makeDexElements(env, classLoader, dexfile, 0, 0, cookies);
-					//release
-					env->DeleteLocalRef(oufile);
-					env->DeleteLocalRef(infile);
-					env->DeleteLocalRef(dexfile);
+					Messageprint::printerror("makedex2oat", "make fail");
 				}
+				env->DeleteLocalRef(oufile);
+				env->DeleteLocalRef(infile);
 				delete[] codePath;
 				delete[] copt_string;
 			}
@@ -412,31 +405,52 @@ void loaddata::loaddex(JNIEnv* env, jmethodID openDexFileNative, const char* dat
 	// start unhook open mmap 
 }
 
-/*
- *
- *
- */
-/*
- *classLoader
- *intTypeCookie 
- *longTypeCookie 
- *objectTypeCookie
- *
- */
-void loaddata::makeDexElements(JNIEnv* env, jobject classLoader, jobject dexFileobj, jint intTypeCookie, jlong longTypeCookie, jobject objectTypeCookie)
+jobject loaddata::makeDexFileObject(JNIEnv* env, jint cookie, const char* filedir)
 {
-	
+	char* in = new char[256];
+	char* out = new char[256];
+	memset(in, 0, 256);
+	memset(out, 0, 256);
+	sprintf(in, "%s/%s/%s", filedir, "code", "mini.dex");
+	sprintf(out, "%s/%s/%s", filedir, "optdir", "mini.odex");
+	//写minidex
+	dvm_davlik->writeminidex(in);
+
+	jclass DexFileClass = env->FindClass("dalvik/system/DexFile");
+	jmethodID init = env->GetMethodID(DexFileClass, "<init>", "(Ljava/lang/String;Ljava/lang/String;I)V");
+	jstring apk = env->NewStringUTF(in);
+	jstring odex = env->NewStringUTF(out);
+	jobject dexobj = env->NewObject(DexFileClass, init, apk, odex, 0);//暂时不用释放了
+
+	jfieldID mCookie = env->GetFieldID(DexFileClass, "mCookie", "I");
+	env->SetIntField(dexobj, mCookie, cookie);
+
+	env->DeleteLocalRef(DexFileClass);
+	env->DeleteLocalRef(apk);
+	env->DeleteLocalRef(odex);
+	delete[]in;
+	delete[]out;
+	return dexobj;
+}
+
+/*
+ *make DexPathList$Element obj
+ *
+ *classLoader 
+ *dexFileobj   DexFile object  from  loadDex
+ */
+void loaddata::makeDexElements(JNIEnv* env, jobject classLoader, jobject dexFileobj)
+{
 	//Application.getClassLoader().getClass().getName()  = dalvik.system.PathClassLoader
 	/*
 	*PathClassLoader superClass BaseDexClassLoader
 	*BaseDexClassLoader superClass  ClassLoader
 	*/
-	
 	jclass PathClassLoader = env->GetObjectClass(classLoader);
 
 	jclass BaseDexClassLoader = env->GetSuperclass(PathClassLoader);
 	//release
-	env->DeleteLocalRef(PathClassLoader);
+
 	//get pathList fiedid
 	jfieldID pathListid = env->GetFieldID(BaseDexClassLoader, "pathList", "Ldalvik/system/DexPathList;");
 	jobject pathList = env->GetObjectField(classLoader, pathListid);
@@ -445,11 +459,15 @@ void loaddata::makeDexElements(JNIEnv* env, jobject classLoader, jobject dexFile
 	jclass DexPathListClass = env->GetObjectClass(pathList);
 	//get dexElements fiedid
 	jfieldID dexElementsid = env->GetFieldID(DexPathListClass, "dexElements", "[Ldalvik/system/DexPathList$Element;");
+
 	//get dexElement array value
 	jobjectArray dexElement = static_cast<jobjectArray>(env->GetObjectField(pathList, dexElementsid));
 
+
 	//get DexPathList$Element Class construction method and get a new DexPathList$Element object 
 	jint len = env->GetArrayLength(dexElement);
+
+
 	jclass ElementClass = env->FindClass("dalvik/system/DexPathList$Element");
 	jmethodID Elementinit = env->GetMethodID(ElementClass, "<init>", "(Ljava/io/File;ZLjava/io/File;Ldalvik/system/DexFile;)V");
 	jboolean isDirectory = JNI_FALSE;
@@ -462,18 +480,23 @@ void loaddata::makeDexElements(JNIEnv* env, jobject classLoader, jobject dexFile
 		env->SetObjectArrayElement(new_dexElement, i, env->GetObjectArrayElement(dexElement, i));
 	}
 	//then set dexElement Fied 
+
 	env->SetObjectArrayElement(new_dexElement, len, element_obj);
 	env->SetObjectField(pathList, dexElementsid, new_dexElement);
+
+	env->DeleteLocalRef(element_obj);
+	env->DeleteLocalRef(ElementClass);
+	env->DeleteLocalRef(dexElement);
+	env->DeleteLocalRef(DexPathListClass);
+	env->DeleteLocalRef(pathList);
+	env->DeleteLocalRef(BaseDexClassLoader);
+	env->DeleteLocalRef(PathClassLoader);
 }
 
-bool loaddata::makedex2oat(const char* DEX_PATH, const char* OTA_PATH)
+bool loaddata::makedex2oat(const char* DEX_PATH, const char* OAT_PATH)
 {
-	char* test = new char[256];
-	memset(test, 0, 256);
-	memcpy(test, OTA_PATH, strlen(OTA_PATH));
-	oatfilePath =test;
 	//if oat file exist retrun true
-	if (access(OTA_PATH, F_OK) == -1)
+	if (access(OAT_PATH, F_OK) == -1)
 	{
 		std::string cmd;
 		//DEX_PATH="/data/data/com.xiaobai.loaddextest/files/code/encrypt0.dex" 
@@ -481,16 +504,16 @@ bool loaddata::makedex2oat(const char* DEX_PATH, const char* OTA_PATH)
 		cmd.append(DEX_PATH);
 		cmd.append("\" ");
 
-		//OTA_PATH="/data/local/tmp/test.so"   
+		//OAT_PATH="/data/local/tmp/test.so"   
 		cmd.append("OAT_PATH=\"");
-		cmd.append(OTA_PATH);
+		cmd.append(OAT_PATH);
 		cmd.append("\" ");
 
 		//LD_PRELOAD="/data/app/com.catchingnow.icebox-1/lib/arm/libdexload.so"
 		cmd.append("LD_PRELOAD=\"");
 		char* paths = new char[256];
 		memset(paths, 0, 256);
-		sprintf(paths, "/data/data/%s/lib/libdexload.so", PackageNames);
+		sprintf(paths, "%s/libdexload.so", NativeLibDir);
 		cmd.append(paths);
 		cmd.append("\" ");
 
@@ -509,7 +532,7 @@ bool loaddata::makedex2oat(const char* DEX_PATH, const char* OTA_PATH)
 
 		//--oat-file=/data/local/tmp/test.so 
 		cmd.append("--oat-file=");
-		cmd.append(OTA_PATH);
+		cmd.append(OAT_PATH);
 		cmd.append(" ");
 
 		cmd.append("--compiler-filter=interpret-only");
@@ -518,7 +541,7 @@ bool loaddata::makedex2oat(const char* DEX_PATH, const char* OTA_PATH)
 
 		int optres = system(cmd.c_str());
 		Messageprint::printinfo("dex2oat", "optres:%d", optres);
-		if (access(OTA_PATH, F_OK) == -1)
+		if (access(OAT_PATH, F_OK) == -1)
 		{
 			Messageprint::printinfo("dex2oat", "opt fail");
 			return false;
