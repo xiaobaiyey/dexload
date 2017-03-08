@@ -1,0 +1,190 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Messageprint.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="loaddata.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="hook\arm\mem_helper.cpp">
+      <Filter>source\hook\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="hook\arm\native_hook.cpp">
+      <Filter>source\hook\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="hook\arm\thread_helper.cpp">
+      <Filter>source\hook\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="hook\arm\instruction\instruction_helper.cpp">
+      <Filter>source\hook\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="hook\arm\instruction\thumb_instruction.cpp">
+      <Filter>source\hook\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="hook\mshook\ARM.cpp">
+      <Filter>source\hook\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="hook\mshook\Debug.cpp">
+      <Filter>source\hook\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="hook\mshook\Hooker.cpp">
+      <Filter>source\hook\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="hook\mshook\MSHook.cpp">
+      <Filter>source\hook\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="hook\mshook\PosixMemory.cpp">
+      <Filter>source\hook\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="hook\mshook\Thumb.cpp">
+      <Filter>source\hook\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="hook\mshook\util.cpp">
+      <Filter>source\hook\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="hook\mshook\x86.cpp">
+      <Filter>source\hook\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="hook\mshook\x86_64.cpp">
+      <Filter>source\hook\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="Hook.cpp">
+      <Filter>source\hook</Filter>
+    </ClCompile>
+    <ClCompile Include="dexload.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Utilload.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="hook\arm\instruction\arm_instruction.cpp">
+      <Filter>source\hook\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="Davlik.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Art.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="dexload.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="Messageprint.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="loaddata.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="Util.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\mshook\ARM.h">
+      <Filter>header\hook\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\mshook\CydiaSubstrate.h">
+      <Filter>header\hook\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\mshook\Debug.h">
+      <Filter>header\hook\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\mshook\hde64.h">
+      <Filter>header\hook\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\mshook\Hooker.h">
+      <Filter>header\hook\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\mshook\Log.h">
+      <Filter>header\hook\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\mshook\MSHook.h">
+      <Filter>header\hook\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\mshook\PosixMemory.h">
+      <Filter>header\hook\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\mshook\SubstrateStruct.h">
+      <Filter>header\hook\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\mshook\Thumb.h">
+      <Filter>header\hook\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\mshook\util.h">
+      <Filter>header\hook\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\mshook\x86.h">
+      <Filter>header\hook\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\mshook\x86_64.h">
+      <Filter>header\hook\x86</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\arm\godin_type.h">
+      <Filter>header\hook\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\arm\mem_helper.h">
+      <Filter>header\hook\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\arm\native_hook.h">
+      <Filter>header\hook\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\arm\thread_helper.h">
+      <Filter>header\hook\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\arm\instruction\arm_instruction.h">
+      <Filter>header\hook\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\arm\instruction\instruction_helper.h">
+      <Filter>header\hook\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\arm\instruction\thumb_instruction.h">
+      <Filter>header\hook\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="Hook.h">
+      <Filter>header\hook</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\Helper.h">
+      <Filter>header\hook\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="hook\arm\hookinfo.h">
+      <Filter>header\hook</Filter>
+    </ClInclude>
+    <ClInclude Include="Davlik.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="Art.h">
+      <Filter>header</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{b606c752-defd-4975-9747-ded96d49ef1f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="header">
+      <UniqueIdentifier>{eec644b8-7951-44e4-b528-d27ef61d6302}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hook">
+      <UniqueIdentifier>{a60c30e4-5fe9-481a-8835-c4f5f194ba26}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hook\arm">
+      <UniqueIdentifier>{6227ce60-bcb6-4f95-a51d-e4a7024c64d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\hook\x86">
+      <UniqueIdentifier>{b6e0551d-52e4-4fed-86d4-f5a8d511d93b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="header\hook">
+      <UniqueIdentifier>{68a95cd5-7bc1-4d6d-9e9c-1c230e442398}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="header\hook\x86">
+      <UniqueIdentifier>{3d388d84-bd84-4db4-8e1a-4220550028b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="header\hook\arm">
+      <UniqueIdentifier>{0f206286-99ab-4e47-94bd-f4fa5a31264a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" />
+  </ItemGroup>
+</Project>
