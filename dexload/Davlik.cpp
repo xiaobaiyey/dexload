@@ -63,7 +63,6 @@ static void mydvmHashTableFree(HashTable* pHashTable)
 	else
 	{
 		gDvm_userDexFiles = pHashTable;
-		dvmstophook = true;
 		Messageprint::printerror("dvm", "Pointer get  gDvm_userDexFiles");
 		return;
 	}
@@ -159,7 +158,7 @@ static void addToDexFileTable(DexOrJar* pDexOrJar)
 	//get gDvm_userDexFiles
 	dvmstophook = false;
 	dvmInternalNativeShutdown();
-
+	dvmstophook = true;
 	if (gDvm_userDexFiles == nullptr)
 	{
 		Messageprint::printerror("dvm", "gDvm_userDexFiles is null");
