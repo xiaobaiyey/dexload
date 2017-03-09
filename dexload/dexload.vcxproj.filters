@@ -67,6 +67,9 @@
     <ClCompile Include="Art.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="Security.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -158,6 +161,9 @@
       <Filter>header</Filter>
     </ClInclude>
     <ClInclude Include="dvmdata.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="Security.h">
       <Filter>header</Filter>
     </ClInclude>
   </ItemGroup>

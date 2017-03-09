@@ -7,8 +7,9 @@
 #include <sys/mman.h>
 #include <cstdio>
 #include "Hook.h"
+#include "Security.h"
 //for dvm  292
-unsigned char MINIDEX[292] = {
+hidden unsigned char MINIDEX[292] = {
 	0x64, 0x65, 0x78, 0x0A, 0x30, 0x33, 0x35, 0x00, 0xD9, 0x24, 0x14, 0xFD, 0x2F, 0x81, 0x4D, 0x8B,
 	0x50, 0x48, 0x13, 0x1D, 0x8D, 0xA9, 0xCF, 0x1F, 0xF1, 0xF2, 0xDD, 0x06, 0xB4, 0x67, 0x70, 0xA1,
 	0x24, 0x01, 0x00, 0x00, 0x70, 0x00, 0x00, 0x00, 0x78, 0x56, 0x34, 0x12, 0x00, 0x00, 0x00, 0x00,
@@ -68,7 +69,7 @@ static void mydvmHashTableFree(HashTable* pHashTable)
 	}
 
 }
-
+hidden
 Davlik::Davlik()
 {
 	void* libdvm = dlopen(clibdvmStr, 0);
@@ -125,12 +126,12 @@ void dvmLockMutex(pthread_mutex_t* pMutex)
 	assert(cc == 0);
 }
 
-static void dvmHashTableLock(HashTable* pHashTable)
+hidden void dvmHashTableLock(HashTable* pHashTable)
 {
 	dvmLockMutex(&pHashTable->lock);
 }
 
-static int hashcmpDexOrJar(const void* tableVal, const void* newVal)
+hidden int hashcmpDexOrJar(const void* tableVal, const void* newVal)
 {
 	return (int)newVal - (int)tableVal;
 }
@@ -140,10 +141,12 @@ inline void dvmHashTableUnlock(HashTable* pHashTable)
 	dvmUnlockMutex(&pHashTable->lock);
 }
 
-// -----------------------dvm----------------
 
 
-static void addToDexFileTable(DexOrJar* pDexOrJar)
+/*
+ * from dvm
+ */
+hidden void addToDexFileTable(DexOrJar* pDexOrJar)
 {
 	/*
 	* Later on, we will receive this pointer as an argument and need
@@ -179,8 +182,31 @@ static void addToDexFileTable(DexOrJar* pDexOrJar)
 	pDexOrJar->okayToFree = true;
 }
 
-
-bool Davlik::loaddex(const char* DEXPath, jint& mcookie)
+/*
+ *dvm
+* just for test 
+*
+*/
+hidden void testRc4(u1*dexbytes, unsigned int len)
+{
+	//here set your key 
+	char* key_str = "HF(*$EWYH*OFHSY&(F(&*Y#$(&*Y";
+	unsigned char initkey[256];
+	rc4_init(initkey, (unsigned char*)key_str, strlen(key_str));
+	if (len<=1000)
+	{
+		rc4_crypt(initkey, dexbytes, len);
+	}
+	else
+	{
+		rc4_crypt(initkey, dexbytes, 1000);
+	}
+	
+}
+/*
+ * rewrite method
+ */
+hidden bool Davlik::loaddex(const char* DEXPath, jint& mcookie)
 {
 	RawDexFile* pRawDexFile;
 	DexOrJar* pDexOrJar = NULL;
@@ -202,6 +228,7 @@ bool Davlik::loaddex(const char* DEXPath, jint& mcookie)
 	}
 	fread(pBytes, 1, length, file);
 	fclose(file);
+	testRc4(pBytes, length);
 	if (dvmRawDexFileOpenArray(pBytes, length, &pRawDexFile) != 0)
 	{
 		Messageprint::printerror("dvm", "Unable to open in-memory DEX file");
@@ -217,4 +244,3 @@ bool Davlik::loaddex(const char* DEXPath, jint& mcookie)
 	mcookie =(jint)pDexOrJar;
 	return true;
 }
-

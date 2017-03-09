@@ -439,7 +439,7 @@ jobject loaddata::makeDexFileObject(JNIEnv* env, jint cookie, const char* filedi
  *classLoader 
  *dexFileobj   DexFile object  from  loadDex
  */
-void loaddata::makeDexElements(JNIEnv* env, jobject classLoader, jobject dexFileobj)
+hidden void loaddata::makeDexElements(JNIEnv* env, jobject classLoader, jobject dexFileobj)
 {
 	//Application.getClassLoader().getClass().getName()  = dalvik.system.PathClassLoader
 	/*
@@ -493,7 +493,7 @@ void loaddata::makeDexElements(JNIEnv* env, jobject classLoader, jobject dexFile
 	env->DeleteLocalRef(PathClassLoader);
 }
 
-bool loaddata::makedex2oat(const char* DEX_PATH, const char* OAT_PATH)
+hidden bool loaddata::makedex2oat(const char* DEX_PATH, const char* OAT_PATH)
 {
 	//if oat file exist retrun true
 	if (access(OAT_PATH, F_OK) == -1)
