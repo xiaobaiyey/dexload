@@ -1,12 +1,13 @@
 #include "pch.h"
 #include "pch.h"
-#include "Art.h"
+#include "dex2ota.h"
 #include "Messageprint.h"
 #include <dlfcn.h>
 #include "Hook.h"
 #include <fcntl.h>
 #include <cstdlib>
-
+#include "Security.h"
+#include <sys/mman.h>
 //大前提采用系统dex2oat 自定义oat 暂时没能力搞
 static int (*dex2oatoldopen)(const char* file, int oflag, ...);
 
@@ -27,7 +28,27 @@ static char* rc4Key;
 static int dexfd = 0;
 //oat 文件fd 在write方法中用到
 static int oatfd = 0;
+//初始化的s盒
 
+
+static bool stopArtHook = false;
+hidden void dex2oatRc4(unsigned char*dexbytes, unsigned int len)
+{
+	//here set your key 
+	char* key_str = "HF(*$EWYH*OFHSY&(F(&*Y#$(&*Y";
+	unsigned char initkey[256];
+	rc4_init(initkey, (unsigned char*)key_str, strlen(key_str));
+
+	if (len <= 1000)
+	{
+		rc4_crypt(initkey, dexbytes, len);
+	}
+	else
+	{
+		rc4_crypt(initkey, dexbytes, 1000);
+	}
+
+}
 int dex2oatfstat(int fd, struct stat* st)
 {
 	//正常方法
@@ -41,10 +62,27 @@ ssize_t dex2oatwrite(int fd, const void* dec, size_t request)
 	/*
 	 *
 	 */
-	if (oatfd==-1||fd!=oatfd)
+	if (oatfd == -1 || fd != oatfd)
 	{
-		return  dex2oatoldwrite(fd, dec, request);
+		return dex2oatoldwrite(fd, dec, request);
 	}
+/*	//针对优化oat 文件进行加密，加密1000字节
+	if (fd!=-1&&fd==oatfd&&totalsize!=0)
+	{
+		int mod = totalsize - request;
+		if (mod<0)
+		{
+			//加密剩余的字节
+			rc4_crypt(sbox, (unsigned char*)dec, totalsize);
+			totalsize = 0;
+		}
+		else 
+		{
+			rc4_crypt(sbox, (unsigned char*)dec, request);
+			totalsize = totalsize - request;
+		}
+	
+	}*/
 	ssize_t res = dex2oatoldwrite(fd, dec, request);
 	Messageprint::printinfo("loaddex", "write oatfile fd:%d  request:%d writeed:%d", fd, request, res);
 	return res;
@@ -61,6 +99,7 @@ int dex2oatmunmap(void* des, size_t size)
 	return 0;
 }
 
+
 void* dex2oatmmap(void* start, size_t len, int prot, int flags, int fd, off_t offset)
 {
 	//这里对原来的dex文件进行mmap 到内存
@@ -69,15 +108,29 @@ void* dex2oatmmap(void* start, size_t len, int prot, int flags, int fd, off_t of
 	 * 2. dexfd=-1
 	 * 3. fd不等于dexfd
 	 */
-	if (fd== 0xFFFFFFFF||dexfd==-1||fd!=dexfd)
+	if (fd == 0xFFFFFFFF || dexfd == -1 || fd != dexfd)
 	{
-		return  dex2oatoldmmap(start, len, prot, flags, fd, offset);
+		return dex2oatoldmmap(start, len, prot, flags, fd, offset);
 	}
 	/*
 	 * 这里可以做相关的加密 暂时不做 其中fd是重点
+	 * 
+	 * 第一次 
 	 */
+	if (fd!=-1&&fd==dexfd)
+	{
+		unsigned char* result = (unsigned char*)dex2oatoldmmap(start, len, prot, flags, fd, offset);
+		void* res = result;
+		Messageprint::printinfo("loaddex", "mmap dex start:0x%08x port:%d len:0x%08x fd:%d offset:0x%x magic:%s", start, prot, len, fd, offset, "");
+		mprotect(result, 1000, PROT_READ | PROT_WRITE);
+		dexfd =0;
+		dex2oatRc4(result, len);
+		return res;
+	}
+	char magic[4] = { 0 };
 	void* result = dex2oatoldmmap(start, len, prot, flags, fd, offset);
-	Messageprint::printinfo("loaddex", "mmap dex start:0x%08x port:%d len:0x%08x fd:0x%X offset:0x%x", start, prot, len, fd, offset);
+	memcpy(magic, result, 4);
+	
 	return result;
 }
 
@@ -85,7 +138,7 @@ void* dex2oatmmap(void* start, size_t len, int prot, int flags, int fd, off_t of
 ssize_t dex2oatread(int fd, void* dest, size_t request)
 {
 	//dex2oat在优化过程中 会读取一个"dex\n"文件头 过滤掉其他读取
-	if (dexfd==-1||request!=4||fd!=dexfd)
+	if (dexfd == -1 || request != 4 || fd != dexfd)
 	{
 		return dex2oatoldread(fd, dest, request);
 	}
@@ -106,9 +159,9 @@ static int dex2oatopen(const char* pathname, int flags, ...)
 		va_end(args);
 	}
 	//对dexfd 进行判断
-	if (dexfd!=0&&oatfd!=0)
+	if (dexfd != 0 && oatfd != 0)
 	{
-		return  dex2oatoldopen(pathname, flags, mode);;
+		return dex2oatoldopen(pathname, flags, mode);;
 	}
 	if (strcmp(dexFilePath, pathname) == 0)
 	{
@@ -124,7 +177,7 @@ static int dex2oatopen(const char* pathname, int flags, ...)
 	}
 	else
 	{
-		return  dex2oatoldopen(pathname, flags, mode);;
+		return dex2oatoldopen(pathname, flags, mode);;
 	}
 }
 
@@ -158,3 +211,4 @@ void art::InitLogging(char* argv[])
 	dlclose(arthandle);
 	return oldInitLogging(argv);
 }
+

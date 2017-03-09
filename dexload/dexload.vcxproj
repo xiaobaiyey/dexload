@@ -163,8 +163,9 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Art.cpp" />
-    <ClCompile Include="Davlik.cpp" />
+    <ClCompile Include="Artvm.cpp" />
+    <ClCompile Include="dex2oat.cpp" />
+    <ClCompile Include="Davlikvm.cpp" />
     <ClCompile Include="dexload.cpp" />
     <ClCompile Include="Hook.cpp" />
     <ClCompile Include="hook\arm\instruction\arm_instruction.cpp" />
@@ -188,8 +189,9 @@
     <ClCompile Include="Utilload.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Art.h" />
-    <ClInclude Include="Davlik.h" />
+    <ClInclude Include="Artvm.h" />
+    <ClInclude Include="dex2ota.h" />
+    <ClInclude Include="Davlikvm.h" />
     <ClInclude Include="dexload.h" />
     <ClInclude Include="dvmdata.h" />
     <ClInclude Include="Hook.h" />

@@ -61,13 +61,16 @@
     <ClCompile Include="hook\arm\instruction\arm_instruction.cpp">
       <Filter>source\hook\arm</Filter>
     </ClCompile>
-    <ClCompile Include="Davlik.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="Art.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="Security.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="dex2oat.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Artvm.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Davlikvm.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -154,16 +157,19 @@
     <ClInclude Include="hook\arm\hookinfo.h">
       <Filter>header\hook</Filter>
     </ClInclude>
-    <ClInclude Include="Davlik.h">
-      <Filter>header</Filter>
-    </ClInclude>
-    <ClInclude Include="Art.h">
-      <Filter>header</Filter>
-    </ClInclude>
     <ClInclude Include="dvmdata.h">
       <Filter>header</Filter>
     </ClInclude>
     <ClInclude Include="Security.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="dex2ota.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="Artvm.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="Davlikvm.h">
       <Filter>header</Filter>
     </ClInclude>
   </ItemGroup>

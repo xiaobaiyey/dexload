@@ -12,7 +12,9 @@
 #include <string>
 #include <cstdlib>
 #include "dexload.h"
-#include "Davlik.h"
+#include "Davlikvm.h"
+#include "Artvm.h"
+
 char* PackageFilePath;
 char* PackageNames;
 
@@ -109,6 +111,8 @@ void loaddata::attachContextBaseContext(JNIEnv* env, jobject obj, jobject ctx)
 	if (isArt)
 	{
 		openDexFileNative = env->GetStaticMethodID(DexFile, "loadDex", method_sign.sign.c_str());
+		Artvm::hookEnable(false);
+		Artvm::hookstart();
 	}
 	else
 	{
@@ -401,7 +405,7 @@ void loaddata::loaddex(JNIEnv* env, jmethodID loadDex, const char* data_filePath
 			}
 		}
 	}
-	stophook = true;
+	Artvm::hookEnable(true);
 	// start unhook open mmap 
 }
 

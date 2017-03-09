@@ -1,4 +1,7 @@
 #pragma once
+#include <ctime>
+
+//for dex2oat
 namespace art
 {
 	//http://blog.chinaunix.net/uid-13344516-id-79188.html
@@ -20,11 +23,7 @@ namespace art
 	void InitLogging(char* argv[]);
 	bool stophook = false;
 	void (*oldInitLogging)(char* argv[]);
-	
+
 	//art hook dex2ota open read fstat mmap mprotect write º¯Êý
 }
-class  Art
-{
-public:
 
-};
