@@ -151,7 +151,7 @@ void Artvm::setdexAndoat(const char * dexc, const char * oatc_text)
 
 void Artvm::hookstart()
 {
-	void* arthandle = dlopen("libart.so", 0);
+	void* arthandle = dlopen("/system/lib/libc.so", 0);
 	Hook::hookMethod(arthandle, "open", (void*)artmyopen, (void**)(&artoldopen));
 	Hook::hookMethod(arthandle, "read", (void*)artmyread, (void**)(&artoldread));
 	Hook::hookMethod(arthandle, "munmap", (void*)artmymunmap, (void**)(&artoldmunmap));

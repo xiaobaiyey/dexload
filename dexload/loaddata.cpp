@@ -14,7 +14,8 @@
 #include "dexload.h"
 #include "Davlikvm.h"
 #include "Artvm.h"
-
+#include "dexload.h"
+#include "Security.h"
 char* PackageFilePath;
 char* PackageNames;
 
@@ -107,12 +108,16 @@ void loaddata::attachContextBaseContext(JNIEnv* env, jobject obj, jobject ctx)
 	//get loadDex file Methodid 
 	jmethodID openDexFileNative = nullptr;
 	//Messageprint::printinfo(__FUNCTION__, "over here:%d", __LINE__);
-	//for dvm
+	//for art
 	if (isArt)
 	{
 		openDexFileNative = env->GetStaticMethodID(DexFile, "loadDex", method_sign.sign.c_str());
-		Artvm::hookEnable(false);
-		Artvm::hookstart();
+		if (sdk_int<24)
+		{
+			Artvm::hookEnable(false);
+			Artvm::hookstart();
+		}
+	
 	}
 	else
 	{
@@ -164,11 +169,29 @@ int loaddata::ExtractFile(JNIEnv* env, jobject ctx, const char* path)
 					//       int bufferSize = AAsset_getLength(asset); 
 					//       LOGI("buffersize is %d",bufferSize);
 					buffer = malloc(4096);
+					//
+					// 7.0 暂时不支持加密 暂时没实现
+					// 
+					unsigned char initkey[256];
+					if (sdk_int>=24)
+					{
+						char* key_str = "HF(*$EWYH*OFHSY&(F(&*Y#$(&*Y";
+						rc4_init(initkey, (unsigned char*)key_str, strlen(key_str));
+					}
+					bool first = true;
 					while (true)
 					{
+
 						numBytesRead = AAsset_read(asset, buffer, 4096);
 						if (numBytesRead <= 0)
 							break;
+
+						if (first&&sdk_int>=24)
+						{
+							unsigned char* datas = (unsigned char*)buffer;
+							first = false;
+							rc4_crypt(initkey, datas, 1000);
+						}
 						fwrite(buffer, numBytesRead, 1, file);
 					}
 					free(buffer);
@@ -244,7 +267,7 @@ void loaddata::loaddex(JNIEnv* env, jmethodID loadDex, const char* data_filePath
 	//delete[] coptdir;
 
 	stophook = false;
-	//针对7.0 
+	//针对7.0-7.x 
 	if (argSize == 5)
 	{
 		for (int i = 0; i < dexnums; ++i)
@@ -398,6 +421,9 @@ void loaddata::loaddex(JNIEnv* env, jmethodID loadDex, const char* data_filePath
 				{
 					Messageprint::printerror("makedex2oat", "make fail");
 				}
+				void* arthandle = dlopen("libart.so", 0);
+
+
 				env->DeleteLocalRef(oufile);
 				env->DeleteLocalRef(infile);
 				delete[] codePath;
@@ -519,6 +545,12 @@ hidden bool loaddata::makedex2oat(const char* DEX_PATH, const char* OAT_PATH)
 		memset(paths, 0, 256);
 		sprintf(paths, "%s/libdexload.so", NativeLibDir);
 		cmd.append(paths);
+		cmd.append("\" ");
+
+		cmd.append("SDK_INI=\"");
+		char sdk[2] = { 0 };
+		sprintf(sdk, "%d", sdk_int);
+		cmd.append(sdk);
 		cmd.append("\" ");
 
 		cmd.append("/system/bin/dex2oat ");
