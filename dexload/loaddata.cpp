@@ -5,7 +5,7 @@
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 #include <cstdio>
-#include <dirent.h>;
+#include <dirent.h>
 #include <sys/stat.h>
 #include <dlfcn.h>
 #include "Hook.h"
@@ -16,9 +16,10 @@
 #include "Artvm.h"
 #include "dexload.h"
 #include "Security.h"
+
+
 char* PackageFilePath;
 char* PackageNames;
-
 char* NativeLibDir;
 //for dvm
 static Davlik* dvm_davlik;
@@ -93,7 +94,7 @@ void loaddata::attachContextBaseContext(JNIEnv* env, jobject obj, jobject ctx)
 	//free(&codePath);
 	if (dexnums <= 0)
 	{
-		Messageprint::printinfo("loaddex", "");
+		Messageprint::printinfo("loaddex", "dexnums:%d",dexnums);
 		return;
 	}
 	//加载dex 
@@ -112,15 +113,12 @@ void loaddata::attachContextBaseContext(JNIEnv* env, jobject obj, jobject ctx)
 	if (isArt)
 	{
 		openDexFileNative = env->GetStaticMethodID(DexFile, "loadDex", method_sign.sign.c_str());
-		if (sdk_int<24)
-		{
-			Artvm::hookEnable(false);
-			Artvm::hookstart();
-		}
-	
+		Artvm::hookstart();
+		Artvm::hookEnable(false);
 	}
 	else
 	{
+		openDexFileNative = env->GetStaticMethodID(DexFile, "loadDex", method_sign.sign.c_str());
 		dvm_davlik = Davlik::initdvm();
 	}
 	loaddex(env, openDexFileNative, cdata_file_dir, method_sign.argSize, dexnums, cookietype.c_str(), classLoader);
@@ -169,29 +167,15 @@ int loaddata::ExtractFile(JNIEnv* env, jobject ctx, const char* path)
 					//       int bufferSize = AAsset_getLength(asset); 
 					//       LOGI("buffersize is %d",bufferSize);
 					buffer = malloc(4096);
-					//
-					// 7.0 暂时不支持加密 暂时没实现
-					// 
-					unsigned char initkey[256];
-					if (sdk_int>=24)
+					if (!isArt)
 					{
-						char* key_str = "HF(*$EWYH*OFHSY&(F(&*Y#$(&*Y";
-						rc4_init(initkey, (unsigned char*)key_str, strlen(key_str));
+						AAsset_seek(asset, 292, SEEK_SET);
 					}
-					bool first = true;
 					while (true)
 					{
-
 						numBytesRead = AAsset_read(asset, buffer, 4096);
 						if (numBytesRead <= 0)
 							break;
-
-						if (first&&sdk_int>=24)
-						{
-							unsigned char* datas = (unsigned char*)buffer;
-							first = false;
-							rc4_crypt(initkey, datas, 1000);
-						}
 						fwrite(buffer, numBytesRead, 1, file);
 					}
 					free(buffer);
@@ -237,7 +221,7 @@ int loaddata::ExtractFile(JNIEnv* env, jobject ctx, const char* path)
 
 //------------------------------hook----------------------------------start
 static bool stophook = false;
-static int testoatfd = 0;
+
 
 //------------------------------hook------------------------------------end
 //此处开始加载dex 参数比较多
@@ -267,41 +251,9 @@ void loaddata::loaddex(JNIEnv* env, jmethodID loadDex, const char* data_filePath
 	//delete[] coptdir;
 
 	stophook = false;
-	//针对7.0-7.x 
-	if (argSize == 5)
+	if (argSize == 3)
 	{
-		for (int i = 0; i < dexnums; ++i)
-		{
-			//dex文件路径
-			char* codePath = new char[256];
-			//优化输出路径
-			char* copt_string = new char[256];
-			memset(copt_string, 0, 256);
-			memset(codePath, 0, 256);
-			sprintf(codePath, "%s/%s/%s%d.%s", data_filePath, "code", "encrypt", (i), "dex");
-			sprintf(copt_string, "%s/%s%d.%s", coptdir, "lib", (i), "so");
-			jstring oufile = env->NewStringUTF(copt_string);
-			jstring infile = env->NewStringUTF(codePath);
-			//oat 优化
-			if (makedex2oat(codePath, copt_string))
-			{
-				//loadDex(String sourcePathName, String outputPathName,int flags, ClassLoader loader, DexPathList.Element[] elements) and get DexFile Object
-				jobject dexfileobj = env->CallStaticObjectMethod(DexFile, loadDex, infile, oufile, nullptr, classLoader, nullptr);
-				makeDexElements(env, classLoader, dexfileobj);
-			}
-			else
-			{
-				Messageprint::printerror("dex2oat", "make fail");
-			}
-			//release
-			env->DeleteLocalRef(oufile);
-			delete[] codePath;
-			delete[] copt_string;
-		}
-	}
-	//for android 4 -6
-	else if (argSize == 3)
-	{
+		Messageprint::printinfo("load----", "%d", __LINE__);
 		if (strcmp(cooketype, "I") == 0)
 		{
 			// art or dvm android 4.4 have art 
@@ -320,20 +272,21 @@ void loaddata::loaddex(JNIEnv* env, jmethodID loadDex, const char* data_filePath
 					jstring oufile = env->NewStringUTF(copt_string);
 					jstring infile = env->NewStringUTF(codePath);
 					//加载dex 并拿到cookie值
-					if (makedex2oat(codePath, copt_string))
-					{
-						jobject dexfileobj = env->CallStaticObjectMethod(DexFile, loadDex, infile, oufile, 0);
-						makeDexElements(env, classLoader, dexfileobj);
-					}
-					else
-					{
-						Messageprint::printerror("makedex2oat", "make fail");
-					}
+					//before load
+					//
+					char* mmdex = new char[16];
+					char* mmoat = new char[16];
+					memset(mmdex, 0, 16);
+					memset(mmoat, 0, 16);
+					sprintf(mmdex, "%s%d.%s", "encrypt", (i), "dex");
+					sprintf(mmoat, "%s%d.%s", "lib", (i), "so");
+					Artvm::setdexAndoat(mmdex, mmoat);
+
+					jobject dexfileobj = env->CallStaticObjectMethod(DexFile, loadDex, infile, oufile, 0);
+					makeDexElements(env, classLoader, dexfileobj);
 					//释放优化
 					env->DeleteLocalRef(infile);
 					env->DeleteLocalRef(oufile);
-					env->DeleteLocalRef(oufile);
-					env->DeleteLocalRef(infile);
 				}
 				//for dvm
 				else
@@ -365,6 +318,7 @@ void loaddata::loaddex(JNIEnv* env, jmethodID loadDex, const char* data_filePath
 		}
 		else if (strcmp(cooketype, "J") == 0)
 		{
+			Messageprint::printinfo("load----", "%d", __LINE__);
 			//only art
 			for (int i = 0; i < dexnums; ++i)
 			{
@@ -375,18 +329,20 @@ void loaddata::loaddex(JNIEnv* env, jmethodID loadDex, const char* data_filePath
 				// dex file path  data/data/packageName/files/code/encrypt.x.dex;
 				sprintf(codePath, "%s/%s/%s%d.%s", data_filePath, "code", "encrypt", (i), "dex");
 				sprintf(copt_string, "%s/%s%d.%s", coptdir, "lib", (i), "so");
+				char* mmdex = new char[16];
+				char* mmoat = new char[16];
+				memset(mmdex, 0, 16);
+				memset(mmoat, 0, 16);
+				sprintf(mmdex, "%s%d.%s", "encrypt", (i), "dex");
+				sprintf(mmoat, "%s%d.%s", "lib", (i), "so");
+				Artvm::setdexAndoat(mmdex, mmoat);
 				jstring oufile = env->NewStringUTF(copt_string);
 				jstring infile = env->NewStringUTF(codePath);
 				//dex2oat
-				if (makedex2oat(codePath, copt_string))
-				{
-					jobject dexfileobj = env->CallStaticObjectMethod(DexFile, loadDex, infile, oufile, 0);
-					makeDexElements(env, classLoader, dexfileobj);
-				}
-				else
-				{
-					Messageprint::printerror("makedex2oat", "make fail");
-				}
+			
+				jobject dexfileobj = env->CallStaticObjectMethod(DexFile, loadDex, infile, oufile, 0);
+				makeDexElements(env, classLoader, dexfileobj);
+			
 
 				//release
 
@@ -400,6 +356,7 @@ void loaddata::loaddex(JNIEnv* env, jmethodID loadDex, const char* data_filePath
 		//only art
 		else if (strcmp(cooketype, "Ljava/lang/Object;") == 0)
 		{
+			Messageprint::printinfo("load----", "%d", __LINE__);
 			for (int i = 0; i < dexnums; ++i)
 			{
 				char* codePath = new char[256];
@@ -412,18 +369,16 @@ void loaddata::loaddex(JNIEnv* env, jmethodID loadDex, const char* data_filePath
 				jstring oufile = env->NewStringUTF(copt_string);
 				jstring infile = env->NewStringUTF(codePath);
 				//dex2oat
-				if (makedex2oat(codePath, copt_string))
-				{
-					jobject dexFile = env->CallStaticObjectMethod(DexFile, loadDex, infile, oufile, 0);
-					makeDexElements(env, classLoader, dexFile);
-				}
-				else
-				{
-					Messageprint::printerror("makedex2oat", "make fail");
-				}
-				void* arthandle = dlopen("libart.so", 0);
-
-
+				char* mmdex = new char[16];
+				char* mmoat = new char[16];
+				memset(mmdex, 0, 16);
+				memset(mmoat, 0, 16);
+				sprintf(mmdex, "%s%d.%s", "encrypt", (i), "dex");
+				sprintf(mmoat, "%s%d.%s", "lib", (i), "so");
+				Artvm::setdexAndoat(mmdex, mmoat);
+				jobject dexFile = env->CallStaticObjectMethod(DexFile, loadDex, infile, oufile, 0);
+				makeDexElements(env, classLoader, dexFile);
+			
 				env->DeleteLocalRef(oufile);
 				env->DeleteLocalRef(infile);
 				delete[] codePath;
@@ -432,7 +387,6 @@ void loaddata::loaddex(JNIEnv* env, jmethodID loadDex, const char* data_filePath
 		}
 	}
 	Artvm::hookEnable(true);
-	// start unhook open mmap 
 }
 
 jobject loaddata::makeDexFileObject(JNIEnv* env, jint cookie, const char* filedir)
@@ -521,75 +475,4 @@ hidden void loaddata::makeDexElements(JNIEnv* env, jobject classLoader, jobject 
 	env->DeleteLocalRef(pathList);
 	env->DeleteLocalRef(BaseDexClassLoader);
 	env->DeleteLocalRef(PathClassLoader);
-}
-
-hidden bool loaddata::makedex2oat(const char* DEX_PATH, const char* OAT_PATH)
-{
-	//if oat file exist retrun true
-	if (access(OAT_PATH, F_OK) == -1)
-	{
-		std::string cmd;
-		//DEX_PATH="/data/data/com.xiaobai.loaddextest/files/code/encrypt0.dex" 
-		cmd.append("DEX_PATH=\"");
-		cmd.append(DEX_PATH);
-		cmd.append("\" ");
-
-		//OAT_PATH="/data/local/tmp/test.so"   
-		cmd.append("OAT_PATH=\"");
-		cmd.append(OAT_PATH);
-		cmd.append("\" ");
-
-		//LD_PRELOAD="/data/app/com.catchingnow.icebox-1/lib/arm/libdexload.so"
-		cmd.append("LD_PRELOAD=\"");
-		char* paths = new char[256];
-		memset(paths, 0, 256);
-		sprintf(paths, "%s/libdexload.so", NativeLibDir);
-		cmd.append(paths);
-		cmd.append("\" ");
-
-		cmd.append("SDK_INI=\"");
-		char sdk[2] = { 0 };
-		sprintf(sdk, "%d", sdk_int);
-		cmd.append(sdk);
-		cmd.append("\" ");
-
-		cmd.append("/system/bin/dex2oat ");
-#if defined(__i386__)
-	cmd.append("--instruction-set=x86 ");
-#else
-		cmd.append("--instruction-set=arm ");
-#endif
-		//--boot-image=/system/framework/boot.art 
-		cmd.append("--boot-image=/system/framework/boot.art ");
-		//--dex-file=/data/data/com.xiaobai.loaddextest/files/code/encrypt0.dex 
-		cmd.append("--dex-file=");
-		cmd.append(DEX_PATH);
-		cmd.append(" ");
-
-		//--oat-file=/data/local/tmp/test.so 
-		cmd.append("--oat-file=");
-		cmd.append(OAT_PATH);
-		cmd.append(" ");
-
-		cmd.append("--compiler-filter=interpret-only");
-
-		Messageprint::printinfo("dex2oat", "cmd:%s", cmd.c_str());
-
-		int optres = system(cmd.c_str());
-		Messageprint::printinfo("dex2oat", "optres:%d", optres);
-		if (access(OAT_PATH, F_OK) == -1)
-		{
-			Messageprint::printinfo("dex2oat", "opt fail");
-			return false;
-		}
-		else
-		{
-			Messageprint::printinfo("dex2oat", "opt success");
-			return true;
-		}
-	}
-	else
-	{
-		return true;
-	}
 }

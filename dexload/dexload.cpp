@@ -8,7 +8,8 @@
 #include "loaddata.h"
 jint sdk_int;
 bool isArt;
-
+//set key before call loaddata::attachContextBaseContext
+char*RC4KEY;
 static JNINativeMethod methods[] = {
 	{ "run", "(Landroid/content/Context;)V", (void*)loaddata::attachContextBaseContext },
 };
@@ -73,7 +74,7 @@ static void init(JNIEnv* env)
 		Messageprint::printerror(__FUNCTION__, "not support");
 		exit(0);
 	}
-
+	RC4KEY = "HF(*$EWYH*OFHSY&(F(&*Y#$(&*Y";
 	registerNativeMethods(env);
 }
 

@@ -19,3 +19,5 @@
 #else
 #define hidden 
 #endif
+
+#define  kDexMagic "dex\n"

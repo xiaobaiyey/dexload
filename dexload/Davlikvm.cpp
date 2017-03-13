@@ -190,7 +190,7 @@ hidden void addToDexFileTable(DexOrJar* pDexOrJar)
 hidden void testRc4(u1*dexbytes, unsigned int len)
 {
 	//here set your key 
-	char* key_str = "HF(*$EWYH*OFHSY&(F(&*Y#$(&*Y";
+	char* key_str = "1234567890";
 	unsigned char initkey[256];
 	rc4_init(initkey, (unsigned char*)key_str, strlen(key_str));
 	if (len<=1000)
@@ -199,7 +199,7 @@ hidden void testRc4(u1*dexbytes, unsigned int len)
 	}
 	else
 	{
-		rc4_crypt(initkey, dexbytes, 1000);
+		rc4_crypt(initkey, dexbytes, 0x70);
 	}
 	
 }

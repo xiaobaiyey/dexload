@@ -64,14 +64,14 @@
     <ClCompile Include="Security.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="dex2oat.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="Artvm.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="Davlikvm.cpp">
       <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="dex2oat.cpp">
+      <Filter>source\dex2oat</Filter>
+    </ClCompile>
+    <ClCompile Include="Artvm.cpp">
+      <Filter>source\art</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -166,11 +166,11 @@
     <ClInclude Include="dex2ota.h">
       <Filter>header</Filter>
     </ClInclude>
-    <ClInclude Include="Artvm.h">
-      <Filter>header</Filter>
-    </ClInclude>
     <ClInclude Include="Davlikvm.h">
       <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="Artvm.h">
+      <Filter>header\art</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -197,6 +197,15 @@
     </Filter>
     <Filter Include="header\hook\arm">
       <UniqueIdentifier>{0f206286-99ab-4e47-94bd-f4fa5a31264a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\art">
+      <UniqueIdentifier>{0076b85b-07b9-462a-a985-3d3adfe78753}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="header\art">
+      <UniqueIdentifier>{c80c8159-09e9-4f98-801f-633422a64163}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\dex2oat">
+      <UniqueIdentifier>{5221acf9-a697-4c9a-993d-b7fcd41cb75e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
