@@ -8,7 +8,8 @@
 #include <cstdio>
 #include "Hook.h"
 #include "Security.h"
-//for dvm  292
+#include "dexload.h"
+//for dvm, mini dex File hex data
 hidden unsigned char MINIDEX[292] = {
 	0x64, 0x65, 0x78, 0x0A, 0x30, 0x33, 0x35, 0x00, 0xD9, 0x24, 0x14, 0xFD, 0x2F, 0x81, 0x4D, 0x8B,
 	0x50, 0x48, 0x13, 0x1D, 0x8D, 0xA9, 0xCF, 0x1F, 0xF1, 0xF2, 0xDD, 0x06, 0xB4, 0x67, 0x70, 0xA1,
@@ -31,16 +32,13 @@ hidden unsigned char MINIDEX[292] = {
 	0xD8, 0x00, 0x00, 0x00
 };
 
-
-//#if ENDIANNESS == "l"
-#define HAVE_LITTLE_ENDIAN
-//#else
-//#define HAVE_BIG_ENDIAN
-//#endif
-
-
+/**
+ * \brief write mini dex file
+ * \param minidex 
+ */
 void Davlik::writeminidex(const char* minidex)
 {
+	// If the file exists,skip 
 	if (access(minidex,F_OK) == -1)
 	{
 		FILE* file = fopen(minidex, "wb");
@@ -69,8 +67,7 @@ static void mydvmHashTableFree(HashTable* pHashTable)
 	}
 
 }
-hidden
-Davlik::Davlik()
+hidden Davlik::Davlik()
 {
 	void* libdvm = dlopen(clibdvmStr, 0);
 	//_Z18dvmHashTableLookupP9HashTablejPvPFiPKvS3_Eb
@@ -107,11 +104,10 @@ Davlik::~Davlik()
 Davlik* Davlik::initdvm()
 {
 	Davlik* davlik = new Davlik();
-
 	return davlik;
 }
 
-// -----------------------dvm----------------
+
 inline void dvmUnlockMutex(pthread_mutex_t* pMutex)
 {
 	int cc __attribute__((__unused__)) = pthread_mutex_unlock(pMutex);
@@ -119,8 +115,7 @@ inline void dvmUnlockMutex(pthread_mutex_t* pMutex)
 }
 
 
-inline
-void dvmLockMutex(pthread_mutex_t* pMutex)
+inline void dvmLockMutex(pthread_mutex_t* pMutex)
 {
 	int cc __attribute__((__unused__)) = pthread_mutex_lock(pMutex);
 	assert(cc == 0);
@@ -182,29 +177,27 @@ hidden void addToDexFileTable(DexOrJar* pDexOrJar)
 	pDexOrJar->okayToFree = true;
 }
 
-/*
- *dvm
-* just for test 
-*
-*/
+
+/**
+ * \brief  Encrypt and decrypt files
+ * \param dexbytes dex file data
+ * \param len dex file len
+ */
 hidden void testRc4(u1*dexbytes, unsigned int len)
 {
 	//here set your key 
-	char* key_str = "1234567890";
+	char* key_str = RC4KEY;
 	unsigned char initkey[256];
 	rc4_init(initkey, (unsigned char*)key_str, strlen(key_str));
-	if (len<=1000)
-	{
-		rc4_crypt(initkey, dexbytes, len);
-	}
-	else
-	{
-		rc4_crypt(initkey, dexbytes, 0x70);
-	}
+	rc4_crypt(initkey, dexbytes, 0x70);
 	
 }
-/*
- * rewrite method
+
+/**
+ * \brief Rewrite Dalvik_dalvik_system_DexFile_openDexFile_bytearray(const u4* args,JValue* pResult) method
+ * \param DEXPath Dex file path
+ * \param mcookie value of cookie
+ * \return load success or fail
  */
 hidden bool Davlik::loaddex(const char* DEXPath, jint& mcookie)
 {
@@ -226,6 +219,7 @@ hidden bool Davlik::loaddex(const char* DEXPath, jint& mcookie)
 		Messageprint::printerror("dvm", "unable to allocate DEX memory");
 		return false;
 	}
+	fseek(file, 292, SEEK_SET);
 	fread(pBytes, 1, length, file);
 	fclose(file);
 	testRc4(pBytes, length);

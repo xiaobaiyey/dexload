@@ -30,8 +30,7 @@ static unsigned long SDK_INTART = 0;
 static char* dexFilePath;
 //传入oat文件路径
 static char* oatFilePath;
-//传入解密dex key
-static char* rc4Key;
+
 //dex 文件fd;
 static int dexfd = 0;
 
@@ -50,7 +49,7 @@ static bool stopdex2oatHook = false;
 hidden void dex2oatRc4(unsigned char* dexbytes, unsigned int len)
 {
 	//here set your key 
-	char* key_str = "HF(*$EWYH*OFHSY&(F(&*Y#$(&*Y";
+	char* key_str = "1234567890";
 	unsigned char initkey[256];
 	rc4_init(initkey, (unsigned char*)key_str, strlen(key_str));
 	memcpy(sbox, initkey, 256);
@@ -186,7 +185,6 @@ void getEnvText()
 {
 	dexFilePath = getenv("DEX_PATH");
 	//rc4Key = getenv("RC4KEY");
-	rc4Key = "HF(*$EWYH*OFHSY&(F(&*Y#$(&*Y";
 	char* INIT = getenv("SDK_INI");
 	SDK_INTART = strtoul(INIT, nullptr, 0xa);
 	oatFilePath = getenv("OAT_PATH");

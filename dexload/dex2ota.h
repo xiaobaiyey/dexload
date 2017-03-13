@@ -7,7 +7,7 @@ namespace art
 	//http://blog.chinaunix.net/uid-13344516-id-79188.html
 	/*
 	 * 采用LD_PRELOAD 覆盖art中的InitLogging 函数
-	 * 此方法 来自腾讯乐固
+	 * 此方法 来自xxxx加固
 	 * 参数
 	 * DEX_PATH="/data/app/com.catchingnow.icebox-1/oat/arm/base.odex" 
 	 * MY_INFO="16880" 

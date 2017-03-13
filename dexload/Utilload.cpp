@@ -33,6 +33,11 @@ char* Util::jstringTostring(JNIEnv* env, jstring str)
 	return rtn;
 }
 
+/**
+ * \brief Type conversion
+ * \param type java 
+ * \return 
+ */
 std::string Util::getType(char* type)
 {
 
@@ -110,6 +115,13 @@ std::string Util::getType(char* type)
 	}
 }
 
+/**
+ * \brief Get the signature of the java method
+ * \param env 
+ * \param jclassName 
+ * \param jmethodName 
+ * \return  signature of the method 
+ */
 MethodSign Util::getMehodSign(JNIEnv* env, const char* jclassName, const char* jmethodName)
 {
 	jclass javaClass = env->FindClass("java/lang/Class");
@@ -156,7 +168,6 @@ MethodSign Util::getMehodSign(JNIEnv* env, const char* jclassName, const char* j
 				char* cargtypename = Util::jstringTostring(env, argtypename);
 				//转换为参数类型
 				argStr.append(getType(cargtypename));
-				//2017年3月4日23:51:24
 				env->DeleteLocalRef(argClass);
 				env->DeleteLocalRef(argtypename);
 				free(cargtypename);
@@ -191,6 +202,11 @@ MethodSign Util::getMehodSign(JNIEnv* env, const char* jclassName, const char* j
 	return sign;
 }
 
+/**
+ * \brief get DexFile.mCookie Field
+ * \param env 
+ * \return Field tyoe
+ */
 std::string Util::getmCookieType(JNIEnv* env)
 {
 	//原理同过java的反射拿到cookie 类型
@@ -200,19 +216,19 @@ std::string Util::getmCookieType(JNIEnv* env)
 	jobject DexFileClass = env->CallStaticObjectMethod(javaClass, forName, DexFileClassName);
 	jmethodID getDeclaredField = env->GetMethodID(javaClass, "getDeclaredField", "(Ljava/lang/String;)Ljava/lang/reflect/Field;");
 	jstring mcookieName = env->NewStringUTF("mCookie");
-	jobject mFied = env->CallObjectMethod(DexFileClass, getDeclaredField, mcookieName);
+	jobject mfield = env->CallObjectMethod(DexFileClass, getDeclaredField, mcookieName);
 
-	jclass FiedClass = env->FindClass("java/lang/reflect/Field");
-	jmethodID getTypeMethod = env->GetMethodID(FiedClass, "getType", "()Ljava/lang/Class;");
+	jclass fieldClass = env->FindClass("java/lang/reflect/Field");
+	jmethodID getTypeMethod = env->GetMethodID(fieldClass, "getType", "()Ljava/lang/Class;");
 
-	jobject getTypeResultClass = env->CallObjectMethod(mFied, getTypeMethod);
+	jobject getTypeResultClass = env->CallObjectMethod(mfield, getTypeMethod);
 
 	jmethodID getName = env->GetMethodID(javaClass, "getName", "()Ljava/lang/String;");
 	jstring mcookieType = static_cast<jstring>(env->CallObjectMethod(getTypeResultClass, getName));
 	char* type = jstringTostring(env, mcookieType);
 	//Messageprint::printinfo("tag","type:%s",type);
 	env->DeleteLocalRef(getTypeResultClass);
-	env->DeleteLocalRef(mFied);
+	env->DeleteLocalRef(mfield);
 	env->DeleteLocalRef(DexFileClass);
 	env->DeleteLocalRef(mcookieName);
 	env->DeleteLocalRef(DexFileClassName);

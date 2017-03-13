@@ -51,7 +51,7 @@ static void init(JNIEnv* env)
 		char* cvmvalue = Util::jstringTostring(env, vmvalue);
 		env->DeleteLocalRef(vmname);
 		env->DeleteLocalRef(vmvalue);
-		Messageprint::printinfo("tag", "java.vm.name:%s", cvmvalue);
+		//Messageprint::printinfo("tag", "java.vm.name:%s", cvmvalue);
 		jstring vm_version_name = env->NewStringUTF("java.vm.version");
 		jstring vm_version_value = static_cast<jstring>(env->CallStaticObjectMethod(System, System_getProperty, vm_version_name));
 		char* cvm_version_value = Util::jstringTostring(env, vm_version_value);
@@ -59,7 +59,6 @@ static void init(JNIEnv* env)
 		env->DeleteLocalRef(vm_version_value);
 		double version = atof(cvm_version_value);
 		free(cvm_version_value);
-		//Messageprint::printinfo("tag", "vm_version_value:%lf", version);
 		if (version>=2)
 		{
 			isArt = true;
@@ -74,7 +73,8 @@ static void init(JNIEnv* env)
 		Messageprint::printerror(__FUNCTION__, "not support");
 		exit(0);
 	}
-	RC4KEY = "HF(*$EWYH*OFHSY&(F(&*Y#$(&*Y";
+	///set rc4 key here !!!!!!
+	RC4KEY = "1234567890";
 	registerNativeMethods(env);
 }
 
