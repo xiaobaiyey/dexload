@@ -378,7 +378,7 @@ hidden void loaddata::loaddex(JNIEnv* env, jmethodID loadDex, const char* data_f
 				sprintf(mmdex, "%s%d.%s", "encrypt", (i), "dex");
 				sprintf(mmoat, "%s%d.%s", "lib", (i), "so");
 				Artvm::setdexAndoat(mmdex, mmoat);
-				//Artvm::needDex2oat(codePath, copt_string, sdk_int, NativeLibDir);
+				Artvm::needDex2oat(codePath,copt_string, sdk_int, NativeLibDir,mmdex,mmoat);
 				jobject dexFile = env->CallStaticObjectMethod(DexFile, loadDex, infile, oufile, 0);
 				makeDexElements(env, classLoader, dexFile);
 			

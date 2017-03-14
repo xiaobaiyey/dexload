@@ -12,6 +12,7 @@ bool isArt;
 char*RC4KEY;
 static JNINativeMethod methods[] = {
 	{ "run", "(Landroid/content/Context;)V", (void*)loaddata::attachContextBaseContext },
+
 };
 
 

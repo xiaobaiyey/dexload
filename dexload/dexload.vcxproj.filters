@@ -207,6 +207,9 @@
     <Filter Include="source\dex2oat">
       <UniqueIdentifier>{5221acf9-a697-4c9a-993d-b7fcd41cb75e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="source\oatparser">
+      <UniqueIdentifier>{eae29884-e66c-4792-8993-b9f7540c05eb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />

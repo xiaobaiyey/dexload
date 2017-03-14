@@ -4,8 +4,9 @@
 //for dex2oat
 namespace art
 {
-	//http://blog.chinaunix.net/uid-13344516-id-79188.html
+	// 原理 http://blog.chinaunix.net/uid-13344516-id-79188.html
 	/*
+	 *
 	 * 采用LD_PRELOAD 覆盖art中的InitLogging 函数
 	 * 此方法 来自xxxx加固
 	 * 参数

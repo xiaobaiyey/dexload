@@ -45,6 +45,8 @@ static int oatFileFd = -1;
 //------------------------------------------s
 static unsigned char* dexAddress = nullptr;
 #define MINIDEXSIZE 292
+//oat file size
+static  int oatFileSize = 0;
 //if first time to run application  hook fork and exev.
 static bool DisableDex2oat = true;
 
@@ -74,12 +76,13 @@ hidden int Artvm::artmyfstat(int fd, struct stat* s)
 		}
 		if (strcmp(linkPath, oatDatadirOne) == 0 || strcmp(linkPath, oatDatadirTwo) == 0)
 		{
-			//if  st_size<=0
+			/*//if  st_size<=0
 			if (s->st_size <= 0)return res;
 			//else -292 (mini.dex size)
-			s->st_size = s->st_size - MINIDEXSIZE;
-			Messageprint::printdebug("art load dex", "set success");
+			s->st_size = s->st_size - MINIDEXSIZE;*/
+			Messageprint::printdebug("art load dex", "set oat success");
 			//check oat fd
+			oatFileSize = s->st_size;
 			if (oatFileFd == -1)oatFileFd = fd;
 		}
 		Messageprint::printinfo("art load dex", "fstat fd:%d  path:%s", fd, linkPath);
@@ -178,10 +181,28 @@ hidden void* Artvm::artmymmap(void* start, size_t len, int prot, int flags, int 
 			dexAddress = (result + 292);
 			return result + 292;
 		}
-		if (strcmp(linkPath, oatDatadirOne) == 0 || strcmp(linkPath, oatDatadirTwo) == 0)
+		if ((strcmp(linkPath, oatDatadirOne) == 0 || strcmp(linkPath, oatDatadirTwo) == 0)&&offset==0&&len>0x1000)
 		{
+			unsigned char* result = (unsigned char*)artoldmmap(start, len, prot, flags, fd, offset);
+			//此处不太准确 纯属经验（oat文件偏移0x1000 处为oat文件头文件）后面在有时间解析
+			int res = mprotect(result, len, PROT_WRITE | PROT_READ);
+			Messageprint::printinfo("art load dex", "mprotect result:%d", res);
+			OatHeader* oat_header = (OatHeader*)(result + 0x1000);
+			Messageprint::printinfo("art load dex", "mmap oat  mageic:%s",oat_header->magic);
+			int sizeofOatHeader = sizeof(OatHeader)+oat_header->keyValueStoreSize;
+			//接下来即为OatDexFile 头
+			OatDexFileBefore* before = (OatDexFileBefore*)(result + 0x1000 + sizeofOatHeader);
+			//解析dex头文件所在位置before+4+dex_file_location_data_
+			OatDexFileAfter* after = (OatDexFileAfter*)(result+0x1000+sizeofOatHeader+4+before->dex_file_location_size_);
+			unsigned char* dexdata = result + 0x1000 + after->dex_file_offset_;//为dex文件头所在的偏移
+			//解密 dex头
+			artRc4(dexdata, 0x70);
+			mprotect(result,len, prot);
+			//返回 ok;
 			Messageprint::printinfo("art load dex", "mmap oat start:0x%08x port:%d len:0x%08x fd:%d offset:0x%x path:%s", start, prot, len, fd, offset, linkPath);
+			return  result;
 		}
+		Messageprint::printinfo("art load dex", "mmap oat start:0x%08x port:%d len:0x%08x fd:%d offset:0x%x path:%s", start, prot, len, fd, offset, linkPath);
 	}
 	return artoldmmap(start, len, prot, flags, fd, offset);
 }
@@ -283,26 +304,30 @@ hidden int Artvm::artmyexecv(const char* name, char* const* argv)
 
 hidden void* Artvm::startselfDex2oat(void* argsdata)
 {
+	sleep(5);
 	Messageprint::printinfo("arg load dex", "startselfDex2oat");
 	ArmDex2oatArg* args = (struct ArmDex2oatArg*)argsdata;
-	makedex2oat(args->DEXPATH, args->OATPATH, args->SDKINT, args->NATIVEPATH);
+	makedex2oat(args->DEXPATH, args->OATPATH, args->SDKINT, args->NATIVEPATH,args->PACKAGENAME,args->DEXNAME,args->OATNAME);
 	return nullptr;
 }
 
-hidden void Artvm::needDex2oat(const char* DEX_PATH, const char* OAT_PATH, int sdk_int, const char* NativeLibDir)
+hidden void Artvm::needDex2oat(const char* DEX_PATH, const char* OAT_PATH, int sdk_int, const char* NativeLibDir,const char* dexName,const char* oatName)
 {
 	//if file not exist hook fork and exev then make dex2oat by ourself
 	if (access(OAT_PATH, F_OK) == -1)
 	{
 		DisableDex2oat = true;
-		char* dex = strdup(DEX_PATH);
-		char* oat = strdup(OAT_PATH);
+		char* dex = strdup(dexName);
+		char* oat = strdup(oatName);
 		char* native = strdup(NativeLibDir);
 		ArmDex2oatArg* args = new ArmDex2oatArg;
-		args->DEXPATH = dex;
-		args->OATPATH = oat;
+		args->DEXPATH = strdup(DEX_PATH);
+		args->OATPATH = strdup(OAT_PATH);
+		args->DEXNAME = dex;
+		args->OATNAME = oat;
 		args->NATIVEPATH = native;
 		args->SDKINT = sdk_int;
+		args->PACKAGENAME = strdup(PackageNames);
 		pthread_t id;
 		pthread_create(&id, nullptr, &startselfDex2oat, args);
 	}
@@ -312,7 +337,7 @@ hidden void Artvm::needDex2oat(const char* DEX_PATH, const char* OAT_PATH, int s
 	}
 }
 
-hidden bool Artvm::makedex2oat(const char* DEX_PATH, const char* OAT_PATH, int sdk_int, const char* NativeLibDir)
+hidden bool Artvm::makedex2oat(const char* DEX_PATH, const char* OAT_PATH, int sdk_int, const char* NativeLibDir,const char* packageName, const char* dexName, const char* oatName)
 {
 	//if oat file exist retrun true
 	if (access(OAT_PATH, F_OK) == -1)
@@ -320,12 +345,17 @@ hidden bool Artvm::makedex2oat(const char* DEX_PATH, const char* OAT_PATH, int s
 		std::string cmd;
 		//DEX_PATH="/data/data/com.xiaobai.loaddextest/files/code/encrypt0.dex" 
 		cmd.append("DEX_PATH=\"");
-		cmd.append(DEX_PATH);
+		cmd.append(dexName);
 		cmd.append("\" ");
 		Messageprint::printinfo("dex2oat", "dbug test");
 		//OAT_PATH="/data/local/tmp/test.so"   
 		cmd.append("OAT_PATH=\"");
-		cmd.append(OAT_PATH);
+		cmd.append(oatName);
+		cmd.append("\" ");
+
+		////PACKAGENAMW="xxx"
+		cmd.append("Packge=\"");
+		cmd.append(packageName);
 		cmd.append("\" ");
 
 		//LD_PRELOAD="/data/app/com.catchingnow.icebox-1/lib/arm/libdexload.so"
@@ -362,11 +392,11 @@ hidden bool Artvm::makedex2oat(const char* DEX_PATH, const char* OAT_PATH, int s
 
 		cmd.append("--compiler-filter=interpret-only");
 
-		Messageprint::printinfo("dex2oat", "cmd:%s", cmd.c_str());
+		Messageprint::printinfo("dex2oat1111", "cmd:%s", cmd.c_str());
 		//artprestophook = true;
 		int optres = system(cmd.c_str());
 		//artprestophook = false;
-		Messageprint::printinfo("dex2oat", "optres:%d", optres);
+		Messageprint::printinfo("dex2oat1111111", "optres:%d", optres);
 		if (access(OAT_PATH, F_OK) == -1)
 		{
 			Messageprint::printinfo("dex2oat", "opt fail");
