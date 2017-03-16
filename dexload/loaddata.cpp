@@ -395,7 +395,7 @@ hidden jobject loaddata::makeDexFileObject(JNIEnv* env, jint cookie, const char*
 	//дminidex
 	dvm_davlik->writeminidex(in);
 
-	jclass DexFileClass = env->FindClass("dalvik/system/DexPathList$Element");//"dalvik/system/DexPathList$Element"
+	jclass DexFileClass = env->FindClass("dalvik/system/DexFile");//"dalvik/system/DexPathList$Element"
 	jmethodID init = env->GetMethodID(DexFileClass, "<init>", "(Ljava/lang/String;Ljava/lang/String;I)V");
 	jstring apk = env->NewStringUTF(in);
 	jstring odex = env->NewStringUTF(out);

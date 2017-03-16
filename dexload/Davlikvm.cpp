@@ -193,6 +193,7 @@ hidden void testRc4(u1*dexbytes, unsigned int len)
 {
 	//here set your key 
 	char* key_str = RC4KEY;
+	Messageprint::printinfo("dvm", "key:%s", key_str);
 	unsigned char initkey[256];
 	rc4_init(initkey, (unsigned char*)key_str, strlen(key_str));
 	rc4_crypt(initkey, dexbytes, 0x70);
@@ -211,7 +212,7 @@ hidden bool Davlik::loaddex(const char* DEXPath, jint& mcookie)
 	DexOrJar* pDexOrJar = NULL;
 	FILE* file = fopen(DEXPath, "rb");
 	fseek(file, 0, SEEK_END);
-	u4 length = ftell(file)-292;
+	u4 length = ftell(file);
 	rewind(file);
 	if (length <= 0)
 	{
@@ -225,10 +226,15 @@ hidden bool Davlik::loaddex(const char* DEXPath, jint& mcookie)
 		Messageprint::printerror("dvm", "unable to allocate DEX memory");
 		return false;
 	}
-	fseek(file, 292, SEEK_SET);
+	//fseek(file, 292, SEEK_SET);
+	
 	fread(pBytes, 1, length, file);
+//	Messageprint::printinfo("dvm", "tell: %x %x %x %x", pBytes[0],pBytes[1],pBytes[2],pBytes[3]);
 	fclose(file);
-	testRc4(pBytes, length);
+	//Messageprint::printinfo("dvm", "tell: %x %x %x %x %x %x %x %x", pBytes[0], pBytes[1], pBytes[2], pBytes[3],pBytes[4],pBytes[5],pBytes[6],pBytes[7]);
+	testRc4(pBytes, 0x70);
+	//Messageprint::printinfo("dvm", "magic: %s", pBytes);
+	//Messageprint::printinfo("dvm", "tell: %x %x %x %x", pBytes[0], pBytes[1], pBytes[2], pBytes[3]);
 	if (dvmRawDexFileOpenArray(pBytes, length, &pRawDexFile) != 0)
 	{
 		Messageprint::printerror("dvm", "Unable to open in-memory DEX file");
