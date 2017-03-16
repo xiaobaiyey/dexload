@@ -64,30 +64,21 @@
     <ClCompile Include="Security.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="Davlikvm.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="dex2oat.cpp">
       <Filter>source\dex2oat</Filter>
     </ClCompile>
     <ClCompile Include="Artvm.cpp">
       <Filter>source\art</Filter>
     </ClCompile>
+    <ClCompile Include="Davlikvm.cpp">
+      <Filter>source\dvm</Filter>
+    </ClCompile>
+    <ClCompile Include="PluginDex.cpp">
+      <Filter>source\plugin</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="dexload.h">
-      <Filter>header</Filter>
-    </ClInclude>
-    <ClInclude Include="Messageprint.h">
-      <Filter>header</Filter>
-    </ClInclude>
-    <ClInclude Include="loaddata.h">
-      <Filter>header</Filter>
-    </ClInclude>
-    <ClInclude Include="Util.h">
-      <Filter>header</Filter>
-    </ClInclude>
     <ClInclude Include="hook\mshook\ARM.h">
       <Filter>header\hook\x86</Filter>
     </ClInclude>
@@ -157,20 +148,35 @@
     <ClInclude Include="hook\arm\hookinfo.h">
       <Filter>header\hook</Filter>
     </ClInclude>
-    <ClInclude Include="dvmdata.h">
-      <Filter>header</Filter>
-    </ClInclude>
-    <ClInclude Include="Security.h">
-      <Filter>header</Filter>
-    </ClInclude>
-    <ClInclude Include="dex2ota.h">
-      <Filter>header</Filter>
-    </ClInclude>
-    <ClInclude Include="Davlikvm.h">
-      <Filter>header</Filter>
-    </ClInclude>
     <ClInclude Include="Artvm.h">
       <Filter>header\art</Filter>
+    </ClInclude>
+    <ClInclude Include="PluginDex.h">
+      <Filter>header\plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="Davlikvm.h">
+      <Filter>header\others</Filter>
+    </ClInclude>
+    <ClInclude Include="dex2ota.h">
+      <Filter>header\others</Filter>
+    </ClInclude>
+    <ClInclude Include="dexload.h">
+      <Filter>header\others</Filter>
+    </ClInclude>
+    <ClInclude Include="dvmdata.h">
+      <Filter>header\others</Filter>
+    </ClInclude>
+    <ClInclude Include="loaddata.h">
+      <Filter>header\others</Filter>
+    </ClInclude>
+    <ClInclude Include="Messageprint.h">
+      <Filter>header\others</Filter>
+    </ClInclude>
+    <ClInclude Include="Security.h">
+      <Filter>header\others</Filter>
+    </ClInclude>
+    <ClInclude Include="Util.h">
+      <Filter>header\others</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -207,8 +213,17 @@
     <Filter Include="source\dex2oat">
       <UniqueIdentifier>{5221acf9-a697-4c9a-993d-b7fcd41cb75e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="source\oatparser">
-      <UniqueIdentifier>{eae29884-e66c-4792-8993-b9f7540c05eb}</UniqueIdentifier>
+    <Filter Include="source\dvm">
+      <UniqueIdentifier>{14649e71-8c7c-469f-be90-77528dab4e41}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\plugin">
+      <UniqueIdentifier>{c762434f-75c5-45ce-9b6f-1142b25efcc8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="header\plugin">
+      <UniqueIdentifier>{1cb16b4b-432d-42b7-a8d0-5fd66b459a69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="header\others">
+      <UniqueIdentifier>{8e57b4fb-be6a-4ec4-a6f9-ae4b8c277fd9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

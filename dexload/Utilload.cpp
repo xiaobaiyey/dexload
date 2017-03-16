@@ -12,7 +12,7 @@ Util::~Util()
 {
 }
 
-char* Util::jstringTostring(JNIEnv* env, jstring str)
+hidden char* Util::jstringTostring(JNIEnv* env, jstring str)
 {
 	char* rtn = nullptr;
 	jclass clsstring = env->FindClass("java/lang/String");
@@ -38,7 +38,7 @@ char* Util::jstringTostring(JNIEnv* env, jstring str)
  * \param type java 
  * \return 
  */
-std::string Util::getType(char* type)
+hidden std::string Util::getType(char* type)
 {
 
 	if (strcmp(type, "int") == 0)
@@ -122,7 +122,7 @@ std::string Util::getType(char* type)
  * \param jmethodName 
  * \return  signature of the method 
  */
-MethodSign Util::getMehodSign(JNIEnv* env, const char* jclassName, const char* jmethodName)
+hidden MethodSign Util::getMehodSign(JNIEnv* env, const char* jclassName, const char* jmethodName)
 {
 	jclass javaClass = env->FindClass("java/lang/Class");
 	jmethodID forName = env->GetStaticMethodID(javaClass, "forName", "(Ljava/lang/String;)Ljava/lang/Class;");
@@ -207,7 +207,7 @@ MethodSign Util::getMehodSign(JNIEnv* env, const char* jclassName, const char* j
  * \param env 
  * \return Field tyoe
  */
-std::string Util::getmCookieType(JNIEnv* env)
+hidden std::string Util::getmCookieType(JNIEnv* env)
 {
 	//原理同过java的反射拿到cookie 类型
 	jclass javaClass = env->FindClass("java/lang/Class");
@@ -236,7 +236,7 @@ std::string Util::getmCookieType(JNIEnv* env)
 	return getType(type);
 }
 
-jobject Util::newFile(JNIEnv* env, const char* filePath)
+hidden jobject Util::newFile(JNIEnv* env, const char* filePath)
 {
 	jclass File = env->FindClass("java/io/File");
 	jmethodID init = env->GetMethodID(File, "<init>", "(Ljava/lang/String;)V");

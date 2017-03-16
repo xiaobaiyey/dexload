@@ -13,7 +13,7 @@ using namespace std;
 #define maps "/proc/self/maps"
 #define MAX_BUF 512
 
-bool GodinHook::MemHelper::isFunctionAddr(size_t addr)
+hidden bool GodinHook::MemHelper::isFunctionAddr(size_t addr)
 {
   char buf[MAX_BUF]={0};
 
@@ -46,7 +46,7 @@ bool GodinHook::MemHelper::isFunctionAddr(size_t addr)
      return false;
 }
 
-bool GodinHook::MemHelper::unProtectMemory(size_t addr, int size)
+hidden bool GodinHook::MemHelper::unProtectMemory(size_t addr, int size)
 {
   /// 获得当前系统的内存页大小
   int pageSize = sysconf(_SC_PAGESIZE);
@@ -63,7 +63,7 @@ bool GodinHook::MemHelper::unProtectMemory(size_t addr, int size)
 
 }
 
-bool GodinHook::MemHelper::protectMemory(size_t addr, int size)
+hidden bool GodinHook::MemHelper::protectMemory(size_t addr, int size)
 {
   /// 获得当前系统的内存页大小
   int pageSize = sysconf(_SC_PAGESIZE);
@@ -81,7 +81,7 @@ bool GodinHook::MemHelper::protectMemory(size_t addr, int size)
 
 }
 
-void *GodinHook::MemHelper::createExecMemory()
+hidden void *GodinHook::MemHelper::createExecMemory()
 {
   /// 获得当前系统的内存页大小
   int pageSize = sysconf(_SC_PAGESIZE);
@@ -89,7 +89,7 @@ void *GodinHook::MemHelper::createExecMemory()
   return mmap(NULL,pageSize,PROT_READ | PROT_WRITE | PROT_EXEC,MAP_ANONYMOUS | MAP_PRIVATE,0,0);
 }
 
-void GodinHook::MemHelper::freeExecMemory(void *address)
+hidden void GodinHook::MemHelper::freeExecMemory(void *address)
 {
   /// 获得当前系统的内存页大小
   int pageSize = sysconf(_SC_PAGESIZE);

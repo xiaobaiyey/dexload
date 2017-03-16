@@ -9,16 +9,16 @@
 #include "hook/arm/native_hook.h"
 #endif
 
-Hook::Hook()
+hidden Hook::Hook()
 {
 }
 
 
-Hook::~Hook()
+hidden Hook::~Hook()
 {
 }
 
-void Hook::hookMethod(void* handle, const char* symbol, void* new_func, void** old_func)
+hidden void Hook::hookMethod(void* handle, const char* symbol, void* new_func, void** old_func)
 {
 	void* addr = dlsym(handle, symbol);
 	if (addr == nullptr)
@@ -30,11 +30,11 @@ void Hook::hookMethod(void* handle, const char* symbol, void* new_func, void** o
 	inlineHookDirect((unsigned int)(addr), new_func, old_func);
 #else 
 	int res= GodinHook::NativeHook::registeredHook((size_t)addr, (size_t)new_func, (size_t **)old_func);
-	Messageprint::printinfo("hookMethod", "result:%d", res);
+	//Messageprint::printinfo("hookMethod", "result:%d", res);
 #endif
 }
 
-void Hook::hookMethod(void* handle, const std::string symbol, void* new_func, void** old_func)
+hidden void Hook::hookMethod(void* handle, const std::string symbol, void* new_func, void** old_func)
 {
 	void* addr = dlsym(handle, symbol.c_str());
 	if (addr == nullptr)
@@ -50,7 +50,7 @@ void Hook::hookMethod(void* handle, const std::string symbol, void* new_func, vo
 #endif
 }
 
-void Hook::hookMethod(unsigned int addr, void* new_func, void** old_func)
+hidden void Hook::hookMethod(unsigned int addr, void* new_func, void** old_func)
 {
 #if defined(__i386__) || defined(__x86_64__)
 	inlineHookDirect((unsigned int)(addr), new_func, old_func);
@@ -59,7 +59,7 @@ void Hook::hookMethod(unsigned int addr, void* new_func, void** old_func)
 #endif
 }
 #if defined(__arm__)
-void Hook::hookAllRegistered()
+hidden void Hook::hookAllRegistered()
 {
 	GodinHook::NativeHook::hookAllRegistered();
 }

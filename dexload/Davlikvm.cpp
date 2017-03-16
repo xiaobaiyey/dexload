@@ -36,7 +36,7 @@ hidden unsigned char MINIDEX[292] = {
  * \brief write mini dex file
  * \param minidex 
  */
-void Davlik::writeminidex(const char* minidex)
+hidden void Davlik::writeminidex(const char* minidex)
 {
 	// If the file exists,skip 
 	if (access(minidex,F_OK) == -1)
@@ -89,11 +89,17 @@ hidden Davlik::Davlik()
 		initOk = false;
 		Messageprint::printerror("dvm", "Pointer dvmInternalNativeShutdown is null");
 	}
+	if (haveHook)
+	{
+		return;
+	}
 	Hook::hookMethod(libdvm, "_Z16dvmHashTableFreeP9HashTable", (void*)mydvmHashTableFree, (void**)&olddvmHashTableFree);
 #if defined(__arm__)
 	Hook::hookAllRegistered();
 #endif
 	initOk = true;
+	haveHook = true;
+
 }
 
 
@@ -101,7 +107,7 @@ Davlik::~Davlik()
 {
 }
 
-Davlik* Davlik::initdvm()
+hidden Davlik* Davlik::initdvm()
 {
 	Davlik* davlik = new Davlik();
 	return davlik;
@@ -205,7 +211,7 @@ hidden bool Davlik::loaddex(const char* DEXPath, jint& mcookie)
 	DexOrJar* pDexOrJar = NULL;
 	FILE* file = fopen(DEXPath, "rb");
 	fseek(file, 0, SEEK_END);
-	u4 length = ftell(file);
+	u4 length = ftell(file)-292;
 	rewind(file);
 	if (length <= 0)
 	{

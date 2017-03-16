@@ -25,7 +25,7 @@ static void clearcache(char* begin, char *end)
         :"r0","r1","r7"
         );
 }
-void GodinHook::ArmInstruction::createStub(HookInfo * info)
+hidden void GodinHook::ArmInstruction::createStub(HookInfo * info)
 {
   size_t originalAddress = info->getOriginalAddr();
   size_t targetAddress = info->getHookAddr();
@@ -46,7 +46,7 @@ void GodinHook::ArmInstruction::createStub(HookInfo * info)
 
 }
 
-int GodinHook::ArmInstruction::getRepairInstruction(size_t instruction)
+hidden int GodinHook::ArmInstruction::getRepairInstruction(size_t instruction)
 {
   if ((instruction & 0xFE000000) == 0xFA000000) {
           return BLX_ARM;
@@ -78,7 +78,7 @@ int GodinHook::ArmInstruction::getRepairInstruction(size_t instruction)
   return UNDEFINE;
 }
 
-void GodinHook::ArmInstruction::repairBackInstructionsOfStub(HookInfo * info,size_t * calloriginal)
+hidden void GodinHook::ArmInstruction::repairBackInstructionsOfStub(HookInfo * info,size_t * calloriginal)
 {
   size_t originalAddress = info->getOriginalAddr();
   uint8_t *back = info->getOriginalStubBack();
@@ -209,7 +209,7 @@ void GodinHook::ArmInstruction::repairBackInstructionsOfStub(HookInfo * info,siz
   repair[pos++] = originalLr;
 }
 
-void *GodinHook::ArmInstruction::createCallOriginalIns(HookInfo * info)
+hidden void *GodinHook::ArmInstruction::createCallOriginalIns(HookInfo * info)
 {
   void * fun = MemHelper::createExecMemory();
 

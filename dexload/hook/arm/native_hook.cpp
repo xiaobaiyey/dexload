@@ -13,7 +13,7 @@
 
 GodinHook::NativeHook::hook_map GodinHook::NativeHook::hook_map_;
 
-int GodinHook::NativeHook::registeredHook(size_t originalFunAddress, size_t newFunAddress, size_t **callOriginal)
+hidden int GodinHook::NativeHook::registeredHook(size_t originalFunAddress, size_t newFunAddress, size_t **callOriginal)
 {
   bool flag = false;
 
@@ -93,7 +93,7 @@ int GodinHook::NativeHook::registeredHook(size_t originalFunAddress, size_t newF
 
 
 
-int GodinHook::NativeHook::hook(size_t originalFunAddress)
+hidden int GodinHook::NativeHook::hook(size_t originalFunAddress)
 {
 
   HookInfo * info = getHookInfo(originalFunAddress);
@@ -124,7 +124,7 @@ int GodinHook::NativeHook::hook(size_t originalFunAddress)
     return GODINHOOK_ERROR_UNKNOWN;
 }
 
-void *GodinHook::NativeHook::isAlreadyHooked(size_t originalFunAddress)
+hidden void *GodinHook::NativeHook::isAlreadyHooked(size_t originalFunAddress)
 {
   hook_map::iterator it = hook_map_.find(originalFunAddress);
   if(it == hook_map_.end())
@@ -137,12 +137,12 @@ void *GodinHook::NativeHook::isAlreadyHooked(size_t originalFunAddress)
   return NULL;
 }
 
-int GodinHook::NativeHook::getHookedCount()
+hidden int GodinHook::NativeHook::getHookedCount()
 {
   return hook_map_.size();
 }
 
-bool GodinHook::NativeHook::unHook(size_t originalFunAddress)
+hidden bool GodinHook::NativeHook::unHook(size_t originalFunAddress)
 {
   hook_map::iterator it = hook_map_.find(originalFunAddress);
   if(it == hook_map_.end())
@@ -185,7 +185,7 @@ bool GodinHook::NativeHook::unHook(size_t originalFunAddress)
   return false;
 }
 
-GodinHook::HookInfo **GodinHook::NativeHook::getAllHookInfo()
+hidden GodinHook::HookInfo **GodinHook::NativeHook::getAllHookInfo()
 {
   int count = getHookedCount();
 
@@ -198,7 +198,7 @@ GodinHook::HookInfo **GodinHook::NativeHook::getAllHookInfo()
   return infos;
 }
 
-void GodinHook::NativeHook::hookAllRegistered()
+hidden void GodinHook::NativeHook::hookAllRegistered()
 {
   pid_t pid;
   int i;
@@ -212,7 +212,7 @@ void GodinHook::NativeHook::hookAllRegistered()
   ThreadHealper::unFreeze(pid);
 }
 
-void GodinHook::NativeHook::unHookAll()
+hidden void GodinHook::NativeHook::unHookAll()
 {
   pid_t pid;
   int i;
@@ -230,7 +230,7 @@ void GodinHook::NativeHook::unHookAll()
   free(infos);
 }
 
-GodinHook::HookStatus GodinHook::NativeHook::getFunctionStatus(size_t functionAddr)
+hidden GodinHook::HookStatus GodinHook::NativeHook::getFunctionStatus(size_t functionAddr)
 {
    hook_map::iterator it = hook_map_.find(functionAddr);
    if(it == hook_map_.end())
@@ -243,14 +243,14 @@ GodinHook::HookStatus GodinHook::NativeHook::getFunctionStatus(size_t functionAd
    return ERRSTATUS;
 }
 
-void GodinHook::NativeHook::addHookInfo(GodinHook::HookInfo *info)
+hidden void GodinHook::NativeHook::addHookInfo(GodinHook::HookInfo *info)
 {
   if(NULL == info)
    return;
   hook_map_.insert(hook_map::value_type(info->getOriginalAddr(),info));
 }
 
-bool GodinHook::NativeHook::Hook(HookInfo *info)
+hidden bool GodinHook::NativeHook::Hook(HookInfo *info)
 {
 
   /// 获取original方法指令集
@@ -292,7 +292,7 @@ bool GodinHook::NativeHook::Hook(HookInfo *info)
   return true;
 }
 
-bool GodinHook::NativeHook::UnHook(GodinHook::HookInfo *info)
+hidden bool GodinHook::NativeHook::UnHook(GodinHook::HookInfo *info)
 {
   size_t addr = InstructionHelper::valueToMem(info->getOriginalAddr());
   /// 去保护,还原，加保护
@@ -321,7 +321,7 @@ bool GodinHook::NativeHook::UnHook(GodinHook::HookInfo *info)
     return false;
 }
 
-GodinHook::HookInfo *GodinHook::NativeHook::getHookInfo(size_t functionAddr)
+hidden GodinHook::HookInfo *GodinHook::NativeHook::getHookInfo(size_t functionAddr)
 {
   hook_map::iterator it = hook_map_.find(functionAddr);
   if(it == hook_map_.end())

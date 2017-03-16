@@ -19,7 +19,7 @@ namespace GodinHook {
      * @return
      *  返回stub所需字节数
      */
-    int sizeofStub()
+   hidden int sizeofStub()
     {
       return 8;
     }

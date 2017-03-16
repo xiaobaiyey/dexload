@@ -9,7 +9,7 @@
 #include "instruction/instruction_helper.h"
 #include "native_hook.h"
 
-pid_t GodinHook::ThreadHealper::freezzAndRepairThread(GodinHook::HookInfo *info, int action)
+hidden pid_t GodinHook::ThreadHealper::freezzAndRepairThread(GodinHook::HookInfo *info, int action)
 {
   int count;
   pid_t tids[1024];
@@ -52,7 +52,7 @@ pid_t GodinHook::ThreadHealper::freezzAndRepairThread(GodinHook::HookInfo *info,
   return pid;
 }
 
-void GodinHook::ThreadHealper::unFreeze(pid_t pid)
+hidden void GodinHook::ThreadHealper::unFreeze(pid_t pid)
 {
   if(pid < 0)
     return;
@@ -65,7 +65,7 @@ void GodinHook::ThreadHealper::unFreeze(pid_t pid)
 
 }
 
-int GodinHook::ThreadHealper::getAllTids(pid_t pid, pid_t *tids)
+hidden int GodinHook::ThreadHealper::getAllTids(pid_t pid, pid_t *tids)
 {
   char dir_path[32];
   DIR *dir;
@@ -96,7 +96,7 @@ int GodinHook::ThreadHealper::getAllTids(pid_t pid, pid_t *tids)
   return i;
 }
 
-void GodinHook::ThreadHealper::repairThreadPc(pid_t tid, GodinHook::HookInfo *info, int action)
+hidden void GodinHook::ThreadHealper::repairThreadPc(pid_t tid, GodinHook::HookInfo *info, int action)
 {
   struct pt_regs regs;
 
@@ -121,7 +121,7 @@ void GodinHook::ThreadHealper::repairThreadPc(pid_t tid, GodinHook::HookInfo *in
    }
 }
 
-bool GodinHook::ThreadHealper::doRepairThreadPC(GodinHook::HookInfo *info, pt_regs *regs, int action)
+hidden bool GodinHook::ThreadHealper::doRepairThreadPC(GodinHook::HookInfo *info, pt_regs *regs, int action)
 {
   int offset;
   int i;

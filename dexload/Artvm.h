@@ -8,6 +8,7 @@ struct ArmDex2oatArg
 	char* PACKAGENAME;
 	char* DEXNAME;
 	char* OATNAME;
+	int TYPE;
 };
 //for mmap oat file
 struct OatHeader {
@@ -54,13 +55,14 @@ private:
 	static int artmyopen(const char* pathname, int flags, ...);
 	static int artmyfork();
 	static int artmyexecv(const char* name, char*const * argv);
-	static bool makedex2oat(const char* DEX_PATH, const char* OAT_PATH, int sdk_int, const char* NativeLibDir, const char* packageName, const char* dexName, const char* oatName);
+	static bool makedex2oat(const char* DEX_PATH, const char* OAT_PATH, int sdk_int, const char* NativeLibDir, const char* packageName, const char* dexName, const char* oatName, int TYPE);
 	static void* startselfDex2oat(void* args);
 public:
 	static void setdexAndoat(const char* dex, const char* oat);
 	static void hookstart();
 	static void hookEnable(bool isenable);
-	static void needDex2oat(const char* DEX_PATH, const char* OAT_PATH, int sdk_int, const char* NativeLibDir,const char* dexName,const char* oatName);
+	static void needDex2oat(const char* DEX_PATH, const char* OAT_PATH, int sdk_int, const char* NativeLibDir,const char* dexName,const char* oatName,int TYPE);
+	static void setPluginDexAndOat(const char* dexfilePath, const char* oat, const char*packageName);
 	//
 
 };

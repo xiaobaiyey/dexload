@@ -5,7 +5,7 @@
 
 #define ALIGN_PC(pc)	(pc & 0xFFFFFFFC)
 
-void GodinHook::ThumbInstruction::createStub(HookInfo * info)
+hidden void GodinHook::ThumbInstruction::createStub(HookInfo * info)
 {
   size_t originalAddress = info->getOriginalAddr();
   size_t targetAddress = info->getHookAddr();
@@ -32,7 +32,7 @@ void GodinHook::ThumbInstruction::createStub(HookInfo * info)
     cacheflush(original,original+stub_len_,0);
 }
 
-void *GodinHook::ThumbInstruction::createCallOriginalIns(HookInfo * info)
+hidden void *GodinHook::ThumbInstruction::createCallOriginalIns(HookInfo * info)
 {
   void * fun = MemHelper::createExecMemory();
 
@@ -45,7 +45,7 @@ void *GodinHook::ThumbInstruction::createCallOriginalIns(HookInfo * info)
   return fun;
 }
 
-int GodinHook::ThumbInstruction::getRepairInstruction(size_t instruction)
+hidden int GodinHook::ThumbInstruction::getRepairInstruction(size_t instruction)
 {
   if((instruction >> 16) == 0){
       if ((instruction & 0xF000) == 0xD000) {
@@ -101,7 +101,7 @@ int GodinHook::ThumbInstruction::getRepairInstruction(size_t instruction)
   return UNDEFINE;
 }
 
-int GodinHook::ThumbInstruction::repairThumb32Instruction(uint32_t pc, uint16_t high_instruction, uint16_t low_instruction, uint16_t *respair)
+hidden int GodinHook::ThumbInstruction::repairThumb32Instruction(uint32_t pc, uint16_t high_instruction, uint16_t low_instruction, uint16_t *respair)
 {
 	uint32_t instruction;
 	int type;
@@ -265,7 +265,7 @@ int GodinHook::ThumbInstruction::repairThumb32Instruction(uint32_t pc, uint16_t 
 	return offset;
 }
 
-int GodinHook::ThumbInstruction::repairThumb16Instruction(uint32_t pc, uint16_t instruction, uint16_t *respair)
+hidden int GodinHook::ThumbInstruction::repairThumb16Instruction(uint32_t pc, uint16_t instruction, uint16_t *respair)
 {
   int type;
   int offset;
@@ -357,7 +357,7 @@ int GodinHook::ThumbInstruction::repairThumb16Instruction(uint32_t pc, uint16_t 
 
   return offset;
 }
-void GodinHook::ThumbInstruction::repairBackInstructionsOfStub(HookInfo * info, size_t *calloriginal)
+hidden void GodinHook::ThumbInstruction::repairBackInstructionsOfStub(HookInfo * info, size_t *calloriginal)
 {
   size_t originalAddress = info->getOriginalAddr();
   uint8_t *back = info->getOriginalStubBack();
@@ -421,12 +421,12 @@ void GodinHook::ThumbInstruction::repairBackInstructionsOfStub(HookInfo * info, 
   repair[repair_pos +3] = originalLr >> 16;
 }
 
-int GodinHook::ThumbInstruction::sizeofStub()
+hidden int GodinHook::ThumbInstruction::sizeofStub()
 {
   return stub_len_;
 }
 
-void GodinHook::ThumbInstruction::isResetStubSize(size_t originalAddress)
+hidden void GodinHook::ThumbInstruction::isResetStubSize(size_t originalAddress)
 {
   size_t original = valueToMem(originalAddress);
   uint16_t * ins = (uint16_t *)original;
@@ -447,7 +447,7 @@ void GodinHook::ThumbInstruction::isResetStubSize(size_t originalAddress)
 
 }
 
-bool GodinHook::ThumbInstruction::isPcNeedAlgin(size_t address)
+hidden bool GodinHook::ThumbInstruction::isPcNeedAlgin(size_t address)
 {
   if(NULL == address)
     return false;
@@ -458,7 +458,7 @@ bool GodinHook::ThumbInstruction::isPcNeedAlgin(size_t address)
     return false;
 }
 
-bool GodinHook::ThumbInstruction::isThumb2Instruction(uint16_t ins)
+hidden bool GodinHook::ThumbInstruction::isThumb2Instruction(uint16_t ins)
 {
   if(((ins >> 11)>=0x1d) && ((ins >> 11)<= 0x1f))
     return true;

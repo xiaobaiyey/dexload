@@ -4,7 +4,7 @@
 #include <string.h>
 
 
-uint8_t *GodinHook::InstructionHelper::getBackOfStub(size_t targetAddress)
+hidden uint8_t *GodinHook::InstructionHelper::getBackOfStub(size_t targetAddress)
 {
   int len = sizeofStub();
   uint8_t * back = (uint8_t *) calloc(1, (size_t) len);
@@ -15,7 +15,7 @@ uint8_t *GodinHook::InstructionHelper::getBackOfStub(size_t targetAddress)
 }
 
 ///TODO 添加对ARM 64 指令集支持
-GodinHook::FunctionType GodinHook::InstructionHelper::getFunctionType(size_t functionAddr)
+hidden GodinHook::FunctionType GodinHook::InstructionHelper::getFunctionType(size_t functionAddr)
 {
   if(0 == functionAddr)
     return ERRTYEPE;
@@ -26,13 +26,13 @@ GodinHook::FunctionType GodinHook::InstructionHelper::getFunctionType(size_t fun
 
     return THUMB;
 }
-
-size_t GodinHook::InstructionHelper::valueToMem(size_t addr)
+ 
+hidden size_t GodinHook::InstructionHelper::valueToMem(size_t addr)
 {
   return addr &(~0x1L);
 }
 
-size_t GodinHook::InstructionHelper::valueToPc(size_t addr)
+hidden size_t GodinHook::InstructionHelper::valueToPc(size_t addr)
 {
   return valueToMem(addr)+1;
 }

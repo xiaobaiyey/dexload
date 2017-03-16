@@ -21,6 +21,7 @@
 char* PackageFilePath;
 char* PackageNames;
 char* NativeLibDir;
+bool haveHook=false;
 //for dvm
 static Davlik* dvm_davlik;
 
@@ -34,11 +35,7 @@ loaddata::~loaddata()
 {
 }
 
-void loaddata::run(JNIEnv* env, jobject obj, jobject ctx)
-{
-	jclass ActivityThread = env->FindClass("android/app/ActivityThread");
-	jmethodID currentActivityThread = env->GetStaticMethodID(ActivityThread, "currentActivityThread", "()Landroid/app/ActivityThread;");
-}
+
 
 
 /**
@@ -47,9 +44,8 @@ void loaddata::run(JNIEnv* env, jobject obj, jobject ctx)
  * \param obj Java Object
  * \param ctx Android Application
  */
-void loaddata::attachContextBaseContext(JNIEnv* env, jobject obj, jobject ctx)
+hidden void loaddata::attachContextBaseContext(JNIEnv* env, jobject obj, jobject ctx)
 {
-	
 	jclass ApplicationClass = env->GetObjectClass(ctx);
 	jmethodID getFilesDir = env->GetMethodID(ApplicationClass, "getFilesDir", "()Ljava/io/File;");
 	jobject File_obj = env->CallObjectMethod(ctx, getFilesDir);
@@ -78,7 +74,7 @@ void loaddata::attachContextBaseContext(JNIEnv* env, jobject obj, jobject ctx)
 	jmethodID getPackageResourcePath = env->GetMethodID(ApplicationClass, "getPackageResourcePath", "()Ljava/lang/String;");
 	jstring mPackageFilePath = static_cast<jstring>(env->CallObjectMethod(ctx, getPackageResourcePath));
 	const char* cmPackageFilePath = Util::jstringTostring(env, mPackageFilePath);
-	
+
 	PackageFilePath = const_cast<char*>(cmPackageFilePath);
 	env->DeleteLocalRef(mPackageFilePath);
 
@@ -97,14 +93,14 @@ void loaddata::attachContextBaseContext(JNIEnv* env, jobject obj, jobject ctx)
 	sprintf(codePath, "%s/%s", cdata_file_dir, "code");
 	//导出dex文件并获取个数或者获取已经导出dex文件个数；
 	int dexnums = ExtractFile(env, ctx, codePath);
-	
+
 	if (dexnums <= 0)
 	{
-		Messageprint::printinfo("loaddex", "dexnums:%d",dexnums);
+		//Messageprint::printinfo("loaddex", "dexnums:%d", dexnums);
 		return;
 	}
 	//加载dex 
-	jclass DexFile = env->FindClass("dalvik/system/DexFile");
+	jclass DexFile = env->FindClass("dalvik/system/DexFile");//ClassName[1] dalvik/system/DexFile
 	jfieldID mCookie;
 	std::string cookietype = Util::getmCookieType(env);
 	//针对mCookie 值的类型不同不对版本进行区分 
@@ -221,12 +217,11 @@ hidden int loaddata::ExtractFile(JNIEnv* env, jobject ctx, const char* path)
 			closedir(dir);
 			return i;
 		}
-		Messageprint::printinfo("ExtractFile", "dir existed");
+		//Messageprint::printinfo("ExtractFile", "dir existed");
 	}
 
 	return 0;
 }
-
 
 
 /**
@@ -242,8 +237,7 @@ hidden int loaddata::ExtractFile(JNIEnv* env, jobject ctx, const char* path)
 hidden void loaddata::loaddex(JNIEnv* env, jmethodID loadDex, const char* data_filePath, int argSize, int dexnums, const char* cooketype, jobject/*for android 7.0*/ classLoader)
 {
 	//2017年3月6日11:10:22 fix
-	// for android 7.0  argsize=5
-	jclass DexFile = env->FindClass("dalvik/system/DexFile");
+	jclass DexFile = env->FindClass("dalvik/system/DexFile");//ClassName[1] dalvik/system/DexFile
 	char* coptdir = new char[256];
 	memset(coptdir, 0, 256);
 	//data/data/packageName/files/opt/文件夹
@@ -253,84 +247,24 @@ hidden void loaddata::loaddex(JNIEnv* env, jmethodID loadDex, const char* data_f
 		mkdir(coptdir, 505);
 		chmod(coptdir, 505);
 	}
-	if (argSize == 3)
+
+	if (strcmp(cooketype, "I") == 0)
 	{
-		Messageprint::printinfo("load----", "%d", __LINE__);
-		if (strcmp(cooketype, "I") == 0)
+		// art or dvm android 4.4 have art 
+		for (int i = 0; i < dexnums; ++i)
 		{
-			// art or dvm android 4.4 have art 
-			for (int i = 0; i < dexnums; ++i)
+			char* codePath = new char[256];
+			char* copt_string = new char[256];
+			memset(copt_string, 0, 256);
+			memset(codePath, 0, 256);
+			// dex 文件路径 data/data/packageName/files/code/encrypt.x.dex;
+			sprintf(codePath, "%s/%s/%s%d.%s", data_filePath, "code", "encrypt", (i), "dex");
+			sprintf(copt_string, "%s/%s%d.%s", coptdir, "lib", (i), "so");
+			//for art
+			if (isArt)
 			{
-				char* codePath = new char[256];
-				char* copt_string = new char[256];
-				memset(copt_string, 0, 256);
-				memset(codePath, 0, 256);
-				// dex 文件路径 data/data/packageName/files/code/encrypt.x.dex;
-				sprintf(codePath, "%s/%s/%s%d.%s", data_filePath, "code", "encrypt", (i), "dex");
-				sprintf(copt_string, "%s/%s%d.%s", coptdir, "lib", (i), "so");
-				//for art
-				if (isArt)
-				{
-					jstring oufile = env->NewStringUTF(copt_string);
-					jstring infile = env->NewStringUTF(codePath);
-					//加载dex 并拿到cookie值
-					//before load
-					//
-					char* mmdex = new char[16];
-					char* mmoat = new char[16];
-					memset(mmdex, 0, 16);
-					memset(mmoat, 0, 16);
-					sprintf(mmdex, "%s%d.%s", "encrypt", (i), "dex");
-					sprintf(mmoat, "%s%d.%s", "lib", (i), "so");
-					Artvm::setdexAndoat(mmdex, mmoat);
-
-					jobject dexfileobj = env->CallStaticObjectMethod(DexFile, loadDex, infile, oufile, 0);
-					makeDexElements(env, classLoader, dexfileobj);
-					//释放优化
-					env->DeleteLocalRef(infile);
-					env->DeleteLocalRef(oufile);
-				}
-				//for dvm
-				else
-				{
-					if (dvm_davlik->initOk)
-					{
-						jint mcookie;
-
-						if (dvm_davlik->loaddex(codePath, mcookie))
-						{
-							jobject dexfileobj = makeDexFileObject(env, mcookie, data_filePath);
-							makeDexElements(env, classLoader, dexfileobj);
-						}
-						//load fail
-						else
-						{
-							Messageprint::printinfo("loaddex", "load fail");
-						}
-					}
-					//init fail
-					else
-					{
-						Messageprint::printerror("loaddex", "init dvm fail");
-					}
-				}
-				delete[] codePath;
-				delete[] copt_string;
-			}
-		}
-		else if (strcmp(cooketype, "J") == 0)
-		{
-			Messageprint::printinfo("load----", "%d", __LINE__);
-			//only art
-			for (int i = 0; i < dexnums; ++i)
-			{
-				char* codePath = new char[256];
-				char* copt_string = new char[256];
-				memset(copt_string, 0, 256);
-				memset(codePath, 0, 256);
-				// dex file path  data/data/packageName/files/code/encrypt.x.dex;
-				sprintf(codePath, "%s/%s/%s%d.%s", data_filePath, "code", "encrypt", (i), "dex");
-				sprintf(copt_string, "%s/%s%d.%s", coptdir, "lib", (i), "so");
+				jstring oufile = env->NewStringUTF(copt_string);
+				jstring infile = env->NewStringUTF(codePath);
 				char* mmdex = new char[16];
 				char* mmoat = new char[16];
 				memset(mmdex, 0, 16);
@@ -338,55 +272,106 @@ hidden void loaddata::loaddex(JNIEnv* env, jmethodID loadDex, const char* data_f
 				sprintf(mmdex, "%s%d.%s", "encrypt", (i), "dex");
 				sprintf(mmoat, "%s%d.%s", "lib", (i), "so");
 				Artvm::setdexAndoat(mmdex, mmoat);
-				jstring oufile = env->NewStringUTF(copt_string);
-				jstring infile = env->NewStringUTF(codePath);
-				//dex2oat
-			
+				Artvm::needDex2oat(codePath, copt_string, sdk_int, NativeLibDir, mmdex, mmoat, 0);
 				jobject dexfileobj = env->CallStaticObjectMethod(DexFile, loadDex, infile, oufile, 0);
 				makeDexElements(env, classLoader, dexfileobj);
-			
-
-				//release
-
-				env->DeleteLocalRef(oufile);
 				env->DeleteLocalRef(infile);
-
-				delete[] codePath;
-				delete[] copt_string;
+				env->DeleteLocalRef(oufile);
 			}
-		}
-		//only art
-		else if (strcmp(cooketype, "Ljava/lang/Object;") == 0)
-		{
-			Messageprint::printinfo("load----", "%d", __LINE__);
-			for (int i = 0; i < dexnums; ++i)
+			//for dvm
+			else
 			{
-				char* codePath = new char[256];
-				char* copt_string = new char[256];
-				memset(copt_string, 0, 256);
-				memset(codePath, 0, 256);
-				// dex file path data/data/packageName/files/code/encrypt.x.dex;
-				sprintf(codePath, "%s/%s/%s%d.%s", data_filePath, "code", "encrypt", (i), "dex");
-				sprintf(copt_string, "%s/%s%d.%s", coptdir, "lib", (i), "so");
-				jstring oufile = env->NewStringUTF(copt_string);
-				jstring infile = env->NewStringUTF(codePath);
-				//dex2oat
-				char* mmdex = new char[16];
-				char* mmoat = new char[16];
-				memset(mmdex, 0, 16);
-				memset(mmoat, 0, 16);
-				sprintf(mmdex, "%s%d.%s", "encrypt", (i), "dex");
-				sprintf(mmoat, "%s%d.%s", "lib", (i), "so");
-				Artvm::setdexAndoat(mmdex, mmoat);
-				Artvm::needDex2oat(codePath,copt_string, sdk_int, NativeLibDir,mmdex,mmoat);
-				jobject dexFile = env->CallStaticObjectMethod(DexFile, loadDex, infile, oufile, 0);
-				makeDexElements(env, classLoader, dexFile);
-			
-				env->DeleteLocalRef(oufile);
-				env->DeleteLocalRef(infile);
-				delete[] codePath;
-				delete[] copt_string;
+				if (dvm_davlik->initOk)
+				{
+					jint mcookie;
+
+					if (dvm_davlik->loaddex(codePath, mcookie))
+					{
+						jobject dexfileobj = makeDexFileObject(env, mcookie, data_filePath);
+						makeDexElements(env, classLoader, dexfileobj);
+					}
+					//load fail
+					else
+					{
+						Messageprint::printinfo("loaddex", "load fail");
+					}
+				}
+				//init fail
+				else
+				{
+					Messageprint::printerror("loaddex", "init dvm fail");
+				}
 			}
+			delete[] codePath;
+			delete[] copt_string;
+		}
+	}
+	else if (strcmp(cooketype, "J") == 0)
+	{ //only art
+		for (int i = 0; i < dexnums; ++i)
+		{
+			char* codePath = new char[256];
+			char* copt_string = new char[256];
+			memset(copt_string, 0, 256);
+			memset(codePath, 0, 256);
+			// dex file path  data/data/packageName/files/code/encrypt.x.dex;
+			sprintf(codePath, "%s/%s/%s%d.%s", data_filePath, "code", "encrypt", (i), "dex");
+			sprintf(copt_string, "%s/%s%d.%s", coptdir, "lib", (i), "so");
+			char* mmdex = new char[16];
+			char* mmoat = new char[16];
+			memset(mmdex, 0, 16);
+			memset(mmoat, 0, 16);
+			sprintf(mmdex, "%s%d.%s", "encrypt", (i), "dex");
+			sprintf(mmoat, "%s%d.%s", "lib", (i), "so");
+			Artvm::setdexAndoat(mmdex, mmoat);
+			Artvm::needDex2oat(codePath, copt_string, sdk_int, NativeLibDir, mmdex, mmoat, 0);
+			jstring oufile = env->NewStringUTF(copt_string);
+			jstring infile = env->NewStringUTF(codePath);
+			//dex2oat
+
+			jobject dexfileobj = env->CallStaticObjectMethod(DexFile, loadDex, infile, oufile, 0);
+			makeDexElements(env, classLoader, dexfileobj);
+
+
+			//release
+
+			env->DeleteLocalRef(oufile);
+			env->DeleteLocalRef(infile);
+
+			delete[] codePath;
+			delete[] copt_string;
+		}
+	}
+	//only art
+	else if (strcmp(cooketype, "Ljava/lang/Object;") == 0)
+	{
+		for (int i = 0; i < dexnums; ++i)
+		{
+			char* codePath = new char[256];
+			char* copt_string = new char[256];
+			memset(copt_string, 0, 256);
+			memset(codePath, 0, 256);
+			// dex file path data/data/packageName/files/code/encrypt.x.dex;
+			sprintf(codePath, "%s/%s/%s%d.%s", data_filePath, "code", "encrypt", (i), "dex");
+			sprintf(copt_string, "%s/%s%d.%s", coptdir, "lib", (i), "so");
+			jstring oufile = env->NewStringUTF(copt_string);
+			jstring infile = env->NewStringUTF(codePath);
+			//dex2oat
+			char* mmdex = new char[16];
+			char* mmoat = new char[16];
+			memset(mmdex, 0, 16);
+			memset(mmoat, 0, 16);
+			sprintf(mmdex, "%s%d.%s", "encrypt", (i), "dex");
+			sprintf(mmoat, "%s%d.%s", "lib", (i), "so");
+			Artvm::setdexAndoat(mmdex, mmoat);
+			Artvm::needDex2oat(codePath, copt_string, sdk_int, NativeLibDir, mmdex, mmoat,0);
+			jobject dexFile = env->CallStaticObjectMethod(DexFile, loadDex, infile, oufile, 0);
+			makeDexElements(env, classLoader, dexFile);
+
+			env->DeleteLocalRef(oufile);
+			env->DeleteLocalRef(infile);
+			delete[] codePath;
+			delete[] copt_string;
 		}
 	}
 	Artvm::hookEnable(true);
@@ -402,7 +387,7 @@ hidden void loaddata::loaddex(JNIEnv* env, jmethodID loadDex, const char* data_f
 hidden jobject loaddata::makeDexFileObject(JNIEnv* env, jint cookie, const char* filedir)
 {
 	char* in = new char[256];
-	char* out = new char[2-56];
+	char* out = new char[256];
 	memset(in, 0, 256);
 	memset(out, 0, 256);
 	sprintf(in, "%s/%s/%s", filedir, "code", "mini.dex");
@@ -410,7 +395,7 @@ hidden jobject loaddata::makeDexFileObject(JNIEnv* env, jint cookie, const char*
 	//写minidex
 	dvm_davlik->writeminidex(in);
 
-	jclass DexFileClass = env->FindClass("dalvik/system/DexFile");
+	jclass DexFileClass = env->FindClass("dalvik/system/DexPathList$Element");//"dalvik/system/DexPathList$Element"
 	jmethodID init = env->GetMethodID(DexFileClass, "<init>", "(Ljava/lang/String;Ljava/lang/String;I)V");
 	jstring apk = env->NewStringUTF(in);
 	jstring odex = env->NewStringUTF(out);
@@ -436,7 +421,6 @@ hidden jobject loaddata::makeDexFileObject(JNIEnv* env, jint cookie, const char*
   */
 hidden void loaddata::makeDexElements(JNIEnv* env, jobject classLoader, jobject dexFileobj)
 {
-
 	jclass PathClassLoader = env->GetObjectClass(classLoader);
 
 	jclass BaseDexClassLoader = env->GetSuperclass(PathClassLoader);
@@ -459,7 +443,7 @@ hidden void loaddata::makeDexElements(JNIEnv* env, jobject classLoader, jobject 
 	jint len = env->GetArrayLength(dexElement);
 
 
-	jclass ElementClass = env->FindClass("dalvik/system/DexPathList$Element");
+	jclass ElementClass = env->FindClass("dalvik/system/DexPathList$Element");// dalvik/system/DexPathList$Element
 	jmethodID Elementinit = env->GetMethodID(ElementClass, "<init>", "(Ljava/io/File;ZLjava/io/File;Ldalvik/system/DexFile;)V");
 	jboolean isDirectory = JNI_FALSE;
 	jobject element_obj = env->NewObject(ElementClass, Elementinit, nullptr, isDirectory, nullptr, dexFileobj);

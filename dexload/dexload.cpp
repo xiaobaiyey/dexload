@@ -6,13 +6,14 @@
 #include <string>
 #include <cstdlib>
 #include "loaddata.h"
+#include "PluginDex.h"
 jint sdk_int;
 bool isArt;
 //set key before call loaddata::attachContextBaseContext
-char*RC4KEY;
+hidden char*RC4KEY;
 static JNINativeMethod methods[] = {
-	{ "run", "(Landroid/content/Context;)V", (void*)loaddata::attachContextBaseContext },
-
+	{ "attachBaseContext", "(Landroid/content/Context;)V", (void*)loaddata::attachContextBaseContext },
+	{ "loadPluginDex", "(Ljava/lang/String;)Z", (void*)PluginDex::loadDex }
 };
 
 
@@ -33,7 +34,7 @@ int jniRegisterNativeMethods(JNIEnv* env,
 	}
 	return 0;
 }
-int registerNativeMethods(JNIEnv *env) {
+static  int registerNativeMethods(JNIEnv *env) {
 	return jniRegisterNativeMethods(env, "com/xiaobai/tools/Native", methods, sizeof(methods) / sizeof(methods[0]));
 }
 static void init(JNIEnv* env)
@@ -45,14 +46,7 @@ static void init(JNIEnv* env)
 	{
 		jclass System = env->FindClass("java/lang/System");
 		jmethodID System_getProperty = env->GetStaticMethodID(System,"getProperty","(Ljava/lang/String;)Ljava/lang/String;");
-		jclass SystemProperties = env->FindClass("android/os/SystemProperties");
-		jmethodID SystemProperties_get = env->GetStaticMethodID(SystemProperties, "get", "(Ljava/lang/String;)Ljava/lang/String;");
-		jstring vmname = env->NewStringUTF("java.vm.name");
-		jstring vmvalue = static_cast<jstring>(env->CallStaticObjectMethod(System, System_getProperty, vmname));
-		char* cvmvalue = Util::jstringTostring(env, vmvalue);
-		env->DeleteLocalRef(vmname);
-		env->DeleteLocalRef(vmvalue);
-		//Messageprint::printinfo("tag", "java.vm.name:%s", cvmvalue);
+
 		jstring vm_version_name = env->NewStringUTF("java.vm.version");
 		jstring vm_version_value = static_cast<jstring>(env->CallStaticObjectMethod(System, System_getProperty, vm_version_name));
 		char* cvm_version_value = Util::jstringTostring(env, vm_version_value);
@@ -87,7 +81,6 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
 		//LOGI("jni read fail");
 		return -1;
 	}
-
 	init(env);
 	//testJnihelptools();
 	return JNI_VERSION_1_6;

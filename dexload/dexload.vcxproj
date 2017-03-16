@@ -160,6 +160,7 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <CppLanguageStandard>c++11</CppLanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -185,6 +186,7 @@
     <ClCompile Include="hook\mshook\x86_64.cpp" />
     <ClCompile Include="loaddata.cpp" />
     <ClCompile Include="Messageprint.cpp" />
+    <ClCompile Include="PluginDex.cpp" />
     <ClCompile Include="Security.cpp" />
     <ClCompile Include="Utilload.cpp" />
   </ItemGroup>
@@ -220,6 +222,7 @@
     <ClInclude Include="loaddata.h" />
     <ClInclude Include="Messageprint.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="PluginDex.h" />
     <ClInclude Include="Security.h" />
     <ClInclude Include="Util.h" />
   </ItemGroup>
